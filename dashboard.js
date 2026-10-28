@@ -6,26 +6,21 @@ const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const rupiah=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n||0));
 const dateId=v=>v?new Date(v+"T00:00:00").toLocaleDateString("id-ID"):"-";
 const showError=message=>{
- document.body.innerHTML=`<main class="container"><section class="card"><p class="eyebrow">Koperasi Kedungneng</p><h1>Dashboard</h1><p class="message">${message}</p><a href="./index.html">Kembali ke Login</a></section></main>`;
+ document.body.innerHTML=`<main class="container"><section class="card"><p class="eyebrow">Koperasi Kedungneng</p><h1>Dashboard</h1><p class="message">${message}</p><a href="/">Kembali ke Login</a></section></main>`;
 };
 
 async function renderDashboard(){
  try{
   const {data:{user},error:sessionError}=await supabase.auth.getUser();
   if(sessionError) throw sessionError;
-  if(!user){
-   location.href="./index.html";
-   return;
-  }
+  if(!user){ location.replace("/"); return; }
   if(user.email?.toLowerCase()!==ADMIN_EMAIL){
-   await supabase.auth.signOut();
-   showError("Akses ditolak. Akun ini bukan admin.");
-   return;
+   await supabase.auth.signOut(); showError("Akses ditolak. Akun ini bukan admin."); return;
   }
 
   document.body.innerHTML=`<header class="topbar"><div><p class="eyebrow">Koperasi Kedungneng</p><h1>Dashboard</h1></div><button id="logout" style="width:auto;margin:0;padding:9px 14px">Keluar</button></header><main class="container"><section class="stats"><article class="stat-card"><span>Total Anggota</span><strong id="totalAnggota">—</strong></article><article class="stat-card"><span>Total Simpanan Pokok</span><strong id="totalPokok">—</strong></article><article class="stat-card"><span>Total Simpanan Sukarela</span><strong id="totalSukarela">—</strong></article><article class="stat-card"><span>Total Simpanan Wajib</span><strong id="totalWajib">—</strong></article></section><section class="card"><div class="section-head"><div><p class="eyebrow">Data anggota</p><h2>Daftar Anggota</h2></div><input id="search" class="search" type="search" placeholder="Cari nomor atau nama..."></div><div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama</th><th>L/P</th><th>Tanggal Masuk</th><th>Pokok</th><th>Sukarela</th></tr></thead><tbody id="anggotaBody"><tr><td colspan="6" class="muted">Memuat...</td></tr></tbody></table></div></section></main>`;
 
-  document.getElementById("logout").onclick=async()=>{await supabase.auth.signOut();location.href="./index.html"};
+  document.getElementById("logout").onclick=async()=>{await supabase.auth.signOut();location.replace("/")};
 
   const {data:anggota,error}=await supabase.from("koperasi_anggota").select("no_anggota,nama,jenis_kelamin,tanggal_masuk,simpanan_pokok,simpanan_sukarela").order("no_anggota");
   if(error) throw error;
@@ -44,10 +39,7 @@ async function renderDashboard(){
    const q=e.target.value.toLowerCase();
    renderRows(anggota.filter(a=>a.no_anggota.toLowerCase().includes(q)||a.nama.toLowerCase().includes(q)));
   });
- }catch(error){
-  showError("Dashboard gagal dimuat: "+(error.message||String(error)));
- }
+ }catch(error){ showError("Dashboard gagal dimuat: "+(error.message||String(error))); }
 }
-
 window.addEventListener("error",e=>showError("Aplikasi gagal dimuat: "+(e.message||"kesalahan JavaScript")));
 renderDashboard();
