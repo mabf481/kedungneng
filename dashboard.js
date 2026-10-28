@@ -1,7 +1,6 @@
 const SUPABASE_URL="https://ujyavhuwuardqgmwjpra.supabase.co";
 const SUPABASE_KEY="sb_publishable_KlaOcV4hclifU1-sr2hyYQ_WDO8C1Ck";
 const ADMIN_EMAIL="admin@kedungneng.com";
-const SOURCE_SHEET="https://docs.google.com/spreadsheets/d/10SkQb6MYH-9DhDVLL5NJMZk4Y-k_NnUVF-hBGgSslhc/edit?gid=560048510#gid=560048510";
 const rupiah=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n||0));
 const dateId=v=>v?new Date(v+"T00:00:00").toLocaleDateString("id-ID"):"-";
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
@@ -29,7 +28,7 @@ async function renderDashboard(){
   const anggotaTable=(list,extraTitle="Daftar Anggota")=>`<section class="card"><div class="section-head"><div><p class="eyebrow">Data Anggota</p><h2>${extraTitle}</h2></div><input id="search" class="search" type="search" placeholder="Cari nomor atau nama..."></div><div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama</th><th>L/P</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div></section>`;
   const renderAnggotaRows=list=>{const el=document.getElementById("rows");if(!el)return;el.innerHTML=list.map(a=>`<tr><td><b>${esc(a.no_anggota)}</b></td><td>${esc(a.nama)}</td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td>${rupiah(a.simpanan_pokok)}</td><td><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button></td></tr>`).join("")||'<tr><td colspan="6" class="empty">Tidak ditemukan.</td></tr>';el.querySelectorAll("[data-member]").forEach(btn=>btn.onclick=()=>pageAnggotaDetail(btn.dataset.member))};
   const renderAnggotaSearch=()=>{const input=document.getElementById("search");if(!input)return;input.oninput=e=>{const q=e.target.value.toLowerCase();renderAnggotaRows(anggota.filter(a=>String(a.no_anggota).toLowerCase().includes(q)||String(a.nama).toLowerCase().includes(q)))}};
-  function pageDashboard(){setTitle("Dashboard");setStatus("Data tersinkron di Supabase");content.innerHTML=stats()+`<section class="card"><div class="section-head"><div><p class="eyebrow">Sumber Data</p><h2>DATA_ANGGOTA</h2></div><a class="source-link" href="${SOURCE_SHEET}" target="_blank" rel="noopener">Buka Google Sheet ↗</a></div><p class="muted">Dashboard menggunakan data yang telah diimpor dari spreadsheet sumber. Menu simpanan wajib memakai rincian per anggota, tahun, dan bulan.</p></section>`;}
+  function pageDashboard(){setTitle("Dashboard");setStatus("Data tersinkron di Supabase");content.innerHTML=stats();}
   function pageAnggota(){setTitle("Anggota");setStatus(anggota.length+" anggota");content.innerHTML=anggotaTable(anggota);renderAnggotaRows(anggota);renderAnggotaSearch()}
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
