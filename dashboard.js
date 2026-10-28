@@ -28,7 +28,17 @@ async function renderDashboard(){
   const anggotaTable=(list,extraTitle="Daftar Anggota")=>`<section class="card"><div class="section-head"><div><p class="eyebrow">Data Anggota</p><h2>${extraTitle}</h2></div><input id="search" class="search" type="search" placeholder="Cari nomor atau nama..."></div><div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama</th><th>L/P</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div></section>`;
   const renderAnggotaRows=list=>{const el=document.getElementById("rows");if(!el)return;el.innerHTML=list.map(a=>`<tr><td><b>${esc(a.no_anggota)}</b></td><td>${esc(a.nama)}</td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td>${rupiah(a.simpanan_pokok)}</td><td><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button></td></tr>`).join("")||'<tr><td colspan="6" class="empty">Tidak ditemukan.</td></tr>';el.querySelectorAll("[data-member]").forEach(btn=>btn.onclick=()=>pageAnggotaDetail(btn.dataset.member))};
   const renderAnggotaSearch=()=>{const input=document.getElementById("search");if(!input)return;input.oninput=e=>{const q=e.target.value.toLowerCase();renderAnggotaRows(anggota.filter(a=>String(a.no_anggota).toLowerCase().includes(q)||String(a.nama).toLowerCase().includes(q)))}};
-  function pageDashboard(){setTitle("Dashboard");setStatus("Data tersinkron di Supabase");content.innerHTML=stats();}
+  function pageDashboard(){
+    setTitle("Dashboard");setStatus("Data tersinkron di Supabase");
+    const now=new Date();
+    const monthsSinceJoin=joined=>{if(!joined)return 0;const d=new Date(joined+"T00:00:00");if(Number.isNaN(d.getTime())||d>now)return 0;return Math.max(0,(now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth())+1)};
+    const wajibByMember=new Map();wajib.forEach(w=>wajibByMember.set(w.anggota_id,(wajibByMember.get(w.anggota_id)||0)+Number(w.jumlah||0)));
+    const row=a=>{const pokok=Number(a.simpanan_pokok||0),kurangPokok=Math.max(0,100000-pokok),bulan=monthsSinceJoin(a.tanggal_masuk),targetWajib=bulan*10000,saldoWajib=wajibByMember.get(a.id)||0,kurangWajib=Math.max(0,targetWajib-saldoWajib);return '<tr><td><b>'+esc(a.no_anggota)+'</b></td><td>'+esc(a.nama)+'</td><td>'+esc(a.jenis_kelamin||"-")+'</td><td>'+dateId(a.tanggal_masuk)+'</td><td><b>'+(pokok>=100000?"LUNAS":"Kurang "+rupiah(kurangPokok))+'</b></td><td><b>'+(saldoWajib>=targetWajib?"LUNAS":"Kurang "+rupiah(kurangWajib))+'</b></td></tr>'};
+    const render=list=>{document.getElementById("dashboardRows").innerHTML=list.map(row).join("")||'<tr><td colspan="6" class="empty">Tidak ditemukan.</td></tr>'};
+    content.innerHTML=stats()+'<section class="card"><div class="section-head"><div><p class="eyebrow">Kewajiban Simpanan</p><h2>Status Simpanan Anggota</h2></div><input id="dashboardSearch" class="search" type="search" placeholder="Cari nomor atau nama..."></div><div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama</th><th>L/P</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Simpanan Wajib</th></tr></thead><tbody id="dashboardRows"></tbody></table></div></section>';
+    render(anggota);
+    document.getElementById("dashboardSearch").oninput=e=>{const q=e.target.value.toLowerCase();render(anggota.filter(a=>String(a.no_anggota).toLowerCase().includes(q)||String(a.nama).toLowerCase().includes(q)))};
+  }
   function pageAnggota(){setTitle("Anggota");setStatus(anggota.length+" anggota");content.innerHTML=anggotaTable(anggota);renderAnggotaRows(anggota);renderAnggotaSearch()}
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
