@@ -14,7 +14,7 @@ async function login(){
   if(phone!==ADMIN_PHONE){msg.textContent="Nomor HP bukan nomor admin.";return}
   msg.textContent="Memproses...";
   const {error}=await supabase.auth.signInWithPassword({email:ADMIN_EMAIL,password});
-  if(error){msg.textContent="Login gagal. Periksa password.";return}
+  if(error){msg.textContent="Login gagal: "+(error.message||"password salah");return}
   const {data:{user}}=await supabase.auth.getUser();
   if(!user||user.email?.toLowerCase()!==ADMIN_EMAIL){await supabase.auth.signOut();msg.textContent="Akses ditolak.";return}
   location.href="./dashboard.html";
