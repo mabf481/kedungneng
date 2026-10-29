@@ -142,10 +142,24 @@ async function renderDashboard(){
           const {error}=await supabase.from("koperasi_anggota").update({simpanan_pokok:Number(a.simpanan_pokok||0)+jumlah}).eq("id",a.id);
           if(error)throw error;
         }else{
-          const d=new Date(tgl+"T00:00:00"),tahun=d.getFullYear(),bulan=d.getMonth()+1;
-          const existing=wajib.find(w=>String(w.anggota_id)===String(a.id)&&Number(w.tahun)===tahun&&Number(w.bulan)===bulan);
-          const result=existing?await supabase.from("koperasi_simpanan_wajib").update({jumlah:Number(existing.jumlah||0)+jumlah}).eq("id",existing.id):await supabase.from("koperasi_simpanan_wajib").insert({anggota_id:a.id,tahun,bulan,jumlah});
-          if(result.error)throw result.error;
+          const base=new Date(tgl+"T00:00:00");
+          let sisa=jumlah, cursor=new Date(base.getFullYear(),base.getMonth(),1);
+          while(sisa>0){
+            const tahun=cursor.getFullYear(),bulan=cursor.getMonth()+1;
+            const existing=wajib.find(w=>String(w.anggota_id)===String(a.id)&&Number(w.tahun)===tahun&&Number(w.bulan)===bulan);
+            const sudah=Math.min(10000,Math.max(0,Number(existing?.jumlah||0)));
+            const kapasitas=Math.max(0,10000-sudah);
+            const alokasi=Math.min(sisa,kapasitas);
+            if(alokasi>0){
+              const result=existing
+                ? await supabase.from("koperasi_simpanan_wajib").update({jumlah:sudah+alokasi}).eq("id",existing.id)
+                : await supabase.from("koperasi_simpanan_wajib").insert({anggota_id:a.id,tahun,bulan,jumlah:alokasi});
+              if(result.error)throw result.error;
+              if(existing)existing.jumlah=sudah+alokasi;
+            }
+            sisa-=alokasi;
+            cursor.setMonth(cursor.getMonth()+1);
+          }
         }
         alert("Transaksi berhasil disimpan.");
         pageTransaksi();
