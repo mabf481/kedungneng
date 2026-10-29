@@ -2,7 +2,7 @@ const SUPABASE_URL="https://ujyavhuwuardqgmwjpra.supabase.co";
 const SUPABASE_KEY="sb_publishable_KlaOcV4hclifU1-sr2hyYQ_WDO8C1Ck";
 const ADMIN_EMAIL="admin@kedungneng.com";
 const rupiah=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n||0));
-const dateId=v=>v?new Date(v+"T00:00:00").toLocaleDateString("id-ID"):"-";
+const dateId=v=>{if(!v)return"-";const d=new Date(v);return Number.isNaN(d.getTime())?"-":d.toLocaleDateString("id-ID",{day:"2-digit",month:"2-digit",year:"numeric"});};
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const monthName=n=>["","Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"][Number(n)]||"-";
 const timeout=async(promise,ms,label)=>{let timer;const fail=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+" timeout setelah "+Math.round(ms/1000)+" detik")),ms)});try{return await Promise.race([promise,fail])}finally{clearTimeout(timer)}};
@@ -60,7 +60,7 @@ async function renderDashboard(){
     const maxChart=Math.max(1,...activeMonths.map(x=>x.masuk));
     const chartPoints=activeMonths.map((x,i)=>{const xp=8+i*(84/Math.max(1,activeMonths.length-1));const yp=92-(x.masuk/maxChart*70);return xp+","+yp}).join(" ");
     const pokokCount=anggota.filter(a=>Number(a.simpanan_pokok||0)>0).length,totalTx=pokokCount+wajib.length,wajibPct=totalTx?Math.round(wajib.length/totalTx*100):0,pokokPct=totalTx?100-wajibPct:0;
-    const recent=[...wajib.map(w=>({date:w.created_at||String(w.tahun)+"-"+String(w.bulan).padStart(2,"0")+"-01",id:"SW-"+String(w.id).slice(0,8),member:byId.get(w.anggota_id)?.nama||"-",category:"Simpanan Wajib",amount:Number(w.jumlah||0)})),...sukarela.map(s=>({date:s.created_at||s.tanggal,id:"SS-"+String(s.id).slice(0,8),member:byId.get(s.anggota_id)?.nama||"-",category:"Simpanan Sukarela",amount:Number(s.jumlah||0)}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6);
+    const recent=[...wajib.map(w=>({date:w.created_at||String(w.tahun)+"-"+String(w.bulan).padStart(2,"0")+"-01T00:00:00",id:"SW-"+String(w.id).slice(0,8),member:byId.get(w.anggota_id)?.nama||"-",category:"Simpanan Wajib",amount:Number(w.jumlah||0)})),...sukarela.map(s=>({date:s.created_at||s.tanggal+"T00:00:00",id:"SS-"+String(s.id).slice(0,8),member:byId.get(s.anggota_id)?.nama||"-",category:"Simpanan Sukarela",amount:Number(s.jumlah||0)}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6);
     const monthLabels=activeMonths.map(x=>"<span>"+x.label+"</span>").join(""),recentRows=recent.map(r=>"<tr><td>"+dateId(r.date)+"</td><td>"+esc(r.id)+"</td><td>"+esc(r.member)+"</td><td>"+esc(r.category)+"</td><td><b>"+rupiah(r.amount)+"</b></td><td><span class=\"status-pill success\">Berhasil</span></td></tr>").join("");
     content.innerHTML=      "<section class=\"dashboard-head\"><div><h2>Selamat pagi, Admin</h2><p>Pantau aktivitas koperasi hari ini dengan ringkas.</p></div><div class=\"period-tools\"><div class=\"period\"><span>▣</span> 01-"+String(now.getDate()).padStart(2,"0")+" "+monthNames[now.getMonth()]+" "+now.getFullYear()+" <span>⌄</span></div><button class=\"apply-btn\" type=\"button\">Terapkan</button></div></section>"+
       "<section class=\"stats dashboard-stats\"><article class=\"stat-card modern\"><div class=\"stat-icon\">♙</div><div><span>Anggota Aktif</span><strong>"+anggota.length.toLocaleString("id-ID")+"</strong><small class=\"trend up\">↑ Aktif <em>anggota</em></small></div></article>"+
