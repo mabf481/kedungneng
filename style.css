@@ -11,3 +11,10 @@
 .transaction-form #txNote{width:100%;max-width:100%;min-height:70px;resize:none}
 .transaction-form .form-grid label.full:has(#txNote){width:calc(50% - 8px);max-width:calc(50% - 8px)}
 @media(max-width:560px){.transaction-form .form-grid label.full:has(#txNote){width:100%;max-width:100%}.transaction-form #txNote{width:100%;max-width:100%}}
+
+/* Rapikan posisi kolom kiri form transaksi */
+.transaction-form-card .form-grid>label:nth-child(2),
+.transaction-form-card .form-grid>label:nth-child(3),
+.transaction-form-card .form-grid>label:nth-child(5),
+.transaction-form-card .form-grid>label:nth-child(6){transform:translateX(-10px)}
+@media(max-width:560px){.transaction-form-card .form-grid>label:nth-child(2),.transaction-form-card .form-grid>label:nth-child(3),.transaction-form-card .form-grid>label:nth-child(5),.transaction-form-card .form-grid>label:nth-child(6){transform:none}}
