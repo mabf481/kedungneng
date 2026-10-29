@@ -17,7 +17,7 @@ async function renderDashboard(){
   const session=sessionResult.data?.session;
   if(!session){location.replace("/");return}
   if(session.user?.email?.toLowerCase()!==ADMIN_EMAIL){await supabase.auth.signOut();showError("Akses ditolak. Akun ini bukan admin.");return}
-  document.body.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><p class="eyebrow">Koperasi Kedungneng</p><h2>Admin Panel</h2></div><nav class="nav"><button data-menu="dashboard" class="active">Dashboard</button><button data-menu="anggota">Anggota</button><button data-menu="pokok">Simpanan Pokok</button><button data-menu="wajib">Simpanan Wajib</button><button data-menu="sukarela">Simpanan Sukarela</button><button data-menu="aksesbot">Akses Bot WA</button></nav><div class="sidebar-footer"><button id="logout" class="logout">Keluar</button></div></aside><section class="main-area"><header class="topbar"><div><p class="eyebrow">Koperasi Kedungneng</p><h1 id="pageTitle">Dashboard</h1></div><span id="status" class="muted status">Memuat data...</span></header><main class="container" id="content"></main></section></div>`;
+  document.body.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><p class="eyebrow">Koperasi Kedungneng</p><h2>Admin Panel</h2></div><nav class="nav"><button data-menu="dashboard" class="active">Dashboard</button><button data-menu="transaksi">Transaksi</button><button data-menu="anggota">Anggota</button><button data-menu="pokok">Simpanan Pokok</button><button data-menu="wajib">Simpanan Wajib</button><button data-menu="sukarela">Simpanan Sukarela</button><button data-menu="aksesbot">Akses Bot WA</button></nav><div class="sidebar-footer"><button id="logout" class="logout">Keluar</button></div></aside><section class="main-area"><header class="topbar"><div><p class="eyebrow">Koperasi Kedungneng</p><h1 id="pageTitle">Dashboard</h1></div><span id="status" class="muted status">Memuat data...</span></header><main class="container" id="content"></main></section></div>`;
   document.getElementById("logout").onclick=async()=>{await supabase.auth.signOut();location.replace("/")};
   const [aRes,wRes,sRes,waRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,jenis_kelamin,tanggal_masuk,simpanan_pokok,simpanan_sukarela").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA")]);
   if(aRes.error)throw aRes.error;if(wRes.error)throw wRes.error;if(sRes.error)throw sRes.error;if(waRes.error)throw waRes.error;
@@ -71,6 +71,80 @@ async function renderDashboard(){
       "<section class=\"dashboard-grid\"><article class=\"card chart-card\"><div class=\"section-head\"><h3>Arus Kas &amp; Simpanan Bulanan</h3><button class=\"more-btn\" type=\"button\">⋮</button></div><div class=\"chart\"><svg viewBox=\"0 0 100 115\" preserveAspectRatio=\"none\"><line x1=\"8\" y1=\"22\" x2=\"92\" y2=\"22\" class=\"gridline\"/><line x1=\"8\" y1=\"45\" x2=\"92\" y2=\"45\" class=\"gridline\"/><line x1=\"8\" y1=\"68\" x2=\"92\" y2=\"68\" class=\"gridline\"/><line x1=\"8\" y1=\"92\" x2=\"92\" y2=\"92\" class=\"gridline\"/><polyline points=\""+chartPoints+"\" class=\"line teal\" fill=\"none\"/><polyline points=\""+chartPoints+"\" class=\"line red\" fill=\"none\" opacity=\".35\"/></svg><div class=\"xlabels\">"+monthLabels+"</div></div><div class=\"legend\"><span><i class=\"dot teal\"></i>Arus Kas Masuk</span><span><i class=\"dot navy\"></i>Arus Kas Keluar</span><span><i class=\"dot red\"></i>Simpanan</span></div></article>"+
       "<article class=\"card chart-card composition\"><div class=\"section-head\"><h3>Komposisi Transaksi</h3><button class=\"more-btn\" type=\"button\">⋮</button></div><div class=\"donut-wrap\"><div class=\"donut\" style=\"--p1:"+wajibPct+";--p2:100;\"><div class=\"donut-center\">"+totalTx+"<small>transaksi</small></div></div><div class=\"comp-list\"><div><i class=\"dot teal\"></i><span>Simpanan Wajib</span><b>"+wajibPct+"%</b></div><div><i class=\"dot orange\"></i><span>Simpanan Pokok</span><b>"+pokokPct+"%</b></div></div></div></article></section>"+
       "<section class=\"card recent-card\"><div class=\"section-head\"><h3>Aktivitas Terbaru</h3><button class=\"more-btn\" type=\"button\">⋮</button></div><div class=\"table-wrap\"><table><thead><tr><th>Tanggal</th><th>No. Transaksi</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Status</th></tr></thead><tbody>"+(recentRows||"<tr><td colspan=\"6\" class=\"empty\">Belum ada aktivitas.</td></tr>")+"</tbody></table></div></section>";
+  }
+  function pageTransaksi(){
+    setTitle("Entri Data Transaksi");
+    setStatus("Transaksi baru");
+    const now=new Date();
+    const today=now.toISOString().slice(0,10);
+    const txNo="TRX-"+String(now.getFullYear()).slice(2)+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Math.floor(Math.random()*900)+100);
+    const memberOptions=anggota.map(a=>`<option value="${esc(a.id)}">${esc(a.no_anggota)} — ${esc(a.nama)}</option>`).join("");
+    const history=[...wajib.map(w=>({date:w.created_at||String(w.tahun)+"-"+String(w.bulan).padStart(2,"0")+"-01T00:00:00",member:byId.get(w.anggota_id)?.nama||"-",category:"Simpanan Wajib",amount:Number(w.jumlah||0),status:"Berhasil"})),...anggota.filter(a=>Number(a.simpanan_pokok||0)>0).map(a=>({date:a.created_at||a.tanggal_masuk+"T00:00:00",member:a.nama||"-",category:"Simpanan Pokok",amount:Number(a.simpanan_pokok||0),status:"Berhasil"}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+    const historyRows=history.map(h=>`<tr><td>${dateId(h.date)}</td><td>${esc(h.member)}</td><td>${esc(h.category)}</td><td><b>${rupiah(h.amount)}</b></td><td><span class="status-pill success">${h.status}</span></td><td>—</td></tr>`).join("")||'<tr><td colspan="6" class="empty">Belum ada riwayat transaksi.</td></tr>';
+    content.innerHTML=`
+      <section class="transaction-head"><div><h2>Entri Data Transaksi</h2><p>Catat simpanan pokok dan simpanan wajib anggota.</p></div></section>
+      <section class="transaction-grid">
+        <article class="card transaction-form-card">
+          <div class="section-head"><div><p class="eyebrow">Data Transaksi Baru</p><h2>Transaksi Baru</h2></div></div>
+          <form id="transactionForm" class="transaction-form">
+            <div class="form-grid">
+              <label>Nomor Transaksi<input id="txNo" value="${txNo}" readonly><small>Otomatis</small></label>
+              <label>Tanggal<input id="txDate" type="date" value="${today}" required></label>
+              <label>Cari / Pilih Nomor Anggota<select id="txMember" required><option value="">Pilih anggota...</option>${memberOptions}</select></label>
+              <label>Nama Anggota<input id="txMemberName" readonly placeholder="Nama anggota akan tampil"></label>
+              <label>Kategori Transaksi<select id="txCategory"><option value="wajib">Simpanan Wajib</option><option value="pokok">Simpanan Pokok</option></select></label>
+              <label>Jenis Arus<div class="flow-buttons"><button type="button" id="flowMasuk" class="flow-btn active">↓ Masuk</button><button type="button" id="flowKeluar" class="flow-btn" disabled>↑ Keluar</button></div></label>
+              <label>Nominal<input id="txAmount" type="number" min="1" step="1000" value="10000" required></label>
+              <label>Metode Pembayaran<div class="flow-buttons"><button type="button" id="payTunai" class="pay-btn active">▣ Tunai</button><button type="button" id="payTransfer" class="pay-btn">▤ Transfer</button></div></label>
+              <label>Nomor Referensi<input id="txRef" placeholder="Opsional"></label>
+              <label class="full">Keterangan<textarea id="txNote" maxlength="200" placeholder="Keterangan transaksi"></textarea><small id="txCount">0/200</small></label>
+            </div>
+            <div class="transaction-actions"><button type="submit" class="detail-btn primary">▣ Simpan Transaksi</button><button type="button" id="resetTx" class="detail-btn">↻ Reset</button></div>
+          </form>
+        </article>
+        <article class="card transaction-summary">
+          <div class="section-head"><div><p class="eyebrow">Ringkasan Transaksi</p><h2>Detail</h2></div></div>
+          <div class="summary-list">
+            <div><span>Anggota</span><b id="sumMember">-</b></div>
+            <div><span>Kategori Transaksi</span><b id="sumCategory">Simpanan Wajib</b></div>
+            <div><span>Jenis Arus</span><b class="accent">↓ Masuk</b></div>
+            <div><span>Nominal</span><b class="accent" id="sumAmount">Rp10.000</b></div>
+            <div><span>Metode Pembayaran</span><b id="sumPayment">Tunai</b></div>
+            <div><span>Status</span><span class="status-pill pending">Siap disimpan</span></div>
+          </div>
+        </article>
+      </section>
+      <section class="card recent-card transaction-history"><div class="section-head"><div><p class="eyebrow">Riwayat Entri</p><h3>Transaksi Terbaru</h3></div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${historyRows}</tbody></table></div></section>`;
+    const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment");
+    let payment="Tunai";
+    const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=category.value==="pokok"?"Simpanan Pokok":"Simpanan Wajib";sumAmount.textContent=rupiah(amount.value)};
+    member.onchange=sync;category.onchange=sync;amount.oninput=sync;
+    document.getElementById("payTunai").onclick=()=>{payment="Tunai";document.getElementById("payTunai").classList.add("active");document.getElementById("payTransfer").classList.remove("active");sumPayment.textContent=payment};
+    document.getElementById("payTransfer").onclick=()=>{payment="Transfer";document.getElementById("payTransfer").classList.add("active");document.getElementById("payTunai").classList.remove("active");sumPayment.textContent=payment};
+    note.oninput=()=>document.getElementById("txCount").textContent=note.value.length+"/200";
+    document.getElementById("resetTx").onclick=()=>pageTransaksi();
+    document.getElementById("transactionForm").onsubmit=async e=>{
+      e.preventDefault();
+      const a=anggota.find(x=>String(x.id)===String(member.value));
+      const jumlah=Number(amount.value||0),tgl=document.getElementById("txDate").value;
+      if(!a){alert("Pilih anggota terlebih dahulu.");return}
+      if(jumlah<=0){alert("Nominal harus lebih dari 0.");return}
+      const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;btn.textContent="Menyimpan...";
+      try{
+        if(category.value==="pokok"){
+          const {error}=await supabase.from("koperasi_anggota").update({simpanan_pokok:Number(a.simpanan_pokok||0)+jumlah}).eq("id",a.id);
+          if(error)throw error;
+        }else{
+          const d=new Date(tgl+"T00:00:00"),tahun=d.getFullYear(),bulan=d.getMonth()+1;
+          const existing=wajib.find(w=>String(w.anggota_id)===String(a.id)&&Number(w.tahun)===tahun&&Number(w.bulan)===bulan);
+          const result=existing?await supabase.from("koperasi_simpanan_wajib").update({jumlah:Number(existing.jumlah||0)+jumlah}).eq("id",existing.id):await supabase.from("koperasi_simpanan_wajib").insert({anggota_id:a.id,tahun,bulan,jumlah});
+          if(result.error)throw result.error;
+        }
+        alert("Transaksi berhasil disimpan.");
+        pageTransaksi();
+      }catch(err){alert("Gagal menyimpan transaksi: "+(err?.message||String(err)));btn.disabled=false;btn.textContent="▣ Simpan Transaksi"}
+    };
+    sync();
   }
   function pageAnggota(){setTitle("Anggota");setStatus(anggota.length+" anggota");content.innerHTML=anggotaTable(anggota);renderAnggotaRows(anggota);renderAnggotaSearch()}
   function pageAnggotaDetail(id){
@@ -139,6 +213,6 @@ async function renderDashboard(){
     };
     render();
   }
-  const pages={dashboard:pageDashboard,anggota:pageAnggota,pokok:pagePokok,wajib:pageWajib,sukarela:pageSukarela,aksesbot:pageAksesBot};document.querySelectorAll("[data-menu]").forEach(btn=>btn.onclick=()=>{document.querySelectorAll("[data-menu]").forEach(b=>b.classList.remove("active"));btn.classList.add("active");pages[btn.dataset.menu]()});pageDashboard();
+  const pages={dashboard:pageDashboard,transaksi:pageTransaksi,anggota:pageAnggota,pokok:pagePokok,wajib:pageWajib,sukarela:pageSukarela,aksesbot:pageAksesBot};document.querySelectorAll("[data-menu]").forEach(btn=>btn.onclick=()=>{document.querySelectorAll("[data-menu]").forEach(b=>b.classList.remove("active"));btn.classList.add("active");pages[btn.dataset.menu]()});pageDashboard();
  }catch(error){console.error("[Kedungneng Dashboard]",error);showError("Dashboard gagal dimuat: "+(error?.message||String(error)));}}
 window.addEventListener("error",e=>showError("Aplikasi gagal dimuat: "+(e.message||"kesalahan JavaScript")));renderDashboard();
