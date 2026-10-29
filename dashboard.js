@@ -146,7 +146,49 @@ async function renderDashboard(){
     };
     sync();
   }
-  function pageAnggota(){setTitle("Anggota");setStatus(anggota.length+" anggota");content.innerHTML=anggotaTable(anggota);renderAnggotaRows(anggota);renderAnggotaSearch()}
+  function pageAnggota(){
+    setTitle("Anggota");
+    setStatus(anggota.length+" anggota");
+    const laki=anggota.filter(a=>String(a.jenis_kelamin||"").toLowerCase().startsWith("l")).length;
+    const perempuan=anggota.filter(a=>String(a.jenis_kelamin||"").toLowerCase().startsWith("p")).length;
+    const totalPokokAnggota=anggota.reduce((s,a)=>s+Number(a.simpanan_pokok||0),0);
+    content.innerHTML=`
+      <section class="dashboard-head anggota-head">
+        <div><h2>Data Anggota</h2><p>Kelola data anggota dan lihat ringkasan simpanan dengan cepat.</p></div>
+        <div class="period-tools"><div class="period"><span>♙</span> Total ${anggota.length.toLocaleString("id-ID")} anggota</div></div>
+      </section>
+      <section class="stats anggota-stats">
+        <article class="stat-card modern"><div class="stat-icon">♙</div><div><span>Total Anggota</span><strong>${anggota.length.toLocaleString("id-ID")}</strong><small class="trend up">↑ <em>terdaftar</em></small></div></article>
+        <article class="stat-card modern"><div class="stat-icon">♂</div><div><span>Anggota Laki-laki</span><strong>${laki.toLocaleString("id-ID")}</strong><small class="trend neutral"><em>dari total anggota</em></small></div></article>
+        <article class="stat-card modern"><div class="stat-icon">♀</div><div><span>Anggota Perempuan</span><strong>${perempuan.toLocaleString("id-ID")}</strong><small class="trend neutral"><em>dari total anggota</em></small></div></article>
+        <article class="stat-card modern"><div class="stat-icon">Rp</div><div><span>Total Simpanan Pokok</span><strong>${rupiah(totalPokokAnggota)}</strong><small class="trend up">↑ <em>seluruh anggota</em></small></div></article>
+      </section>
+      <section class="card anggota-list-card">
+        <div class="section-head anggota-list-head">
+          <div><p class="eyebrow">Data Anggota</p><h2>Daftar Anggota</h2></div>
+          <div class="anggota-tools"><select id="genderFilter" class="year-select"><option value="">Semua jenis kelamin</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select><input id="search" class="search" type="search" placeholder="Cari nomor anggota atau nama..."></div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>L/P</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div>
+      </section>`;
+    const render=list=>{
+      const el=document.getElementById("rows");
+      el.innerHTML=list.map(a=>{
+        const pokok=Number(a.simpanan_pokok||0);
+        const status=pokok>=100000?"LUNAS":"BELUM LUNAS";
+        return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit Nama</button></div></td></tr>`;
+      }).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
+      el.querySelectorAll("[data-member]").forEach(btn=>btn.onclick=()=>pageAnggotaDetail(btn.dataset.member));
+      el.querySelectorAll("[data-edit-name]").forEach(btn=>btn.onclick=()=>editMemberName(btn.dataset.editName));
+    };
+    const apply=()=>{
+      const q=String(document.getElementById("search").value||"").toLowerCase();
+      const gender=document.getElementById("genderFilter").value;
+      render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))));
+    };
+    document.getElementById("search").oninput=apply;
+    document.getElementById("genderFilter").onchange=apply;
+    render(anggota);
+  }
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
     const rows=wajib.filter(w=>String(w.anggota_id)===String(a.id));
