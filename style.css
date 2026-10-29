@@ -119,3 +119,16 @@
     grid-column:auto;
   }
 }
+
+/* Samakan batas kiri seluruh field Transaksi tanpa mengubah susunan */
+.transaction-form-card .form-grid>label{
+  padding-left:0;
+  padding-right:0;
+}
+.transaction-form-card .form-grid input,
+.transaction-form-card .form-grid select,
+.transaction-form-card .form-grid textarea,
+.transaction-form-card .form-grid .flow-buttons{
+  margin-left:0;
+  margin-right:0;
+}
