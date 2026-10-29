@@ -18,3 +18,39 @@
 .transaction-form-card .form-grid>label:nth-child(5),
 .transaction-form-card .form-grid>label:nth-child(6){transform:translateX(-10px)}
 @media(max-width:560px){.transaction-form-card .form-grid>label:nth-child(2),.transaction-form-card .form-grid>label:nth-child(3),.transaction-form-card .form-grid>label:nth-child(5),.transaction-form-card .form-grid>label:nth-child(6){transform:none}}
+
+/* Penyelarasan form transaksi: semua kolom simetris dan sejajar */
+.transaction-form-card .form-grid{
+  grid-template-columns:1fr 1fr;
+  column-gap:5px;
+  row-gap:8px;
+}
+.transaction-form-card .form-grid>label{
+  width:auto;
+  max-width:none;
+  transform:none;
+}
+.transaction-form-card .form-grid>label.full{
+  width:100%;
+  max-width:100%;
+}
+.transaction-form-card .form-grid #txNo,
+.transaction-form-card .form-grid #txAmount{
+  max-width:100%;
+}
+.transaction-form-card .form-grid label:has(#txNote){
+  width:100%;
+  max-width:100%;
+}
+@media(max-width:560px){
+  .transaction-form-card .form-grid{
+    grid-template-columns:1fr;
+    column-gap:0;
+  }
+  .transaction-form-card .form-grid>label,
+  .transaction-form-card .form-grid>label.full,
+  .transaction-form-card .form-grid label:has(#txNote){
+    width:100%;
+    max-width:100%;
+  }
+}
