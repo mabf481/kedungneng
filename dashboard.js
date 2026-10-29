@@ -23,9 +23,22 @@ async function renderDashboard(){
   document.body.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><p class="eyebrow">LLP Kedungneng</p><h2>Admin Panel</h2></div><nav class="nav"><button data-menu="dashboard" class="active">Dashboard</button><button data-menu="transaksi">Transaksi</button><button data-menu="anggota">Anggota</button><button data-menu="wajib">Simpanan Wajib</button><button data-menu="aksesbot">Akses Bot WA</button>${canManageAdmins?'<button data-menu="admin">Admin</button>':''}</nav><div class="sidebar-footer"><button id="logout" class="logout">Keluar</button></div></aside><section class="main-area"><header class="topbar"><div><p class="eyebrow">LLP Kedungneng</p><h1 id="pageTitle">Dashboard</h1></div><span id="status" class="muted status">Memuat data...</span></header><main class="container" id="content"></main></section></div>`;
   document.getElementById("logout").onclick=async()=>{await supabase.auth.signOut();location.replace("/")};
   let realtimeTimer=null;
-  const refreshFromRealtime=()=>{
+  const refreshFromRealtime=async payload=>{
     clearTimeout(realtimeTimer);
-    realtimeTimer=setTimeout(()=>location.reload(),250);
+    realtimeTimer=setTimeout(async()=>{
+      try{
+        const activeMenu=document.querySelector("[data-menu].active")?.dataset.menu;
+        if(activeMenu==="wajib"){
+          const fresh=await supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at,sumber_transaksi").order("tahun",{ascending:false}).order("bulan",{ascending:false});
+          if(!fresh.error){
+            wajib.splice(0,wajib.length,...(fresh.data||[]));
+            pageWajib();
+            return;
+          }
+        }
+        location.reload();
+      }catch(e){location.reload()}
+    },250);
   };
   supabase.channel("koperasi-dashboard-realtime")
     .on("postgres_changes",{event:"*",schema:"public",table:"koperasi_anggota"},refreshFromRealtime)
