@@ -22,7 +22,7 @@ async function renderDashboard(){
   const canManageAdmins=currentEmail===ADMIN_EMAIL || adminProfile?.role==="super_admin";
   document.body.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><p class="eyebrow">LLP Kedungneng</p><h2>Admin Panel</h2></div><nav class="nav"><button data-menu="dashboard" class="active">Dashboard</button><button data-menu="transaksi">Transaksi</button><button data-menu="anggota">Anggota</button><button data-menu="wajib">Simpanan Wajib</button><button data-menu="aksesbot">Akses Bot WA</button>${canManageAdmins?'<button data-menu="admin">Admin</button>':''}</nav><div class="sidebar-footer"><button id="logout" class="logout">Keluar</button></div></aside><section class="main-area"><header class="topbar"><div><p class="eyebrow">LLP Kedungneng</p><h1 id="pageTitle">Dashboard</h1></div><span id="status" class="muted status">Memuat data...</span></header><main class="container" id="content"></main></section></div>`;
   document.getElementById("logout").onclick=async()=>{await supabase.auth.signOut();location.replace("/")};
-  const [aRes,wRes,sRes,waRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,jenis_kelamin,tanggal_masuk,simpanan_pokok,simpanan_sukarela").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA")]);
+  const [aRes,wRes,sRes,waRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,jenis_kelamin,tanggal_masuk,simpanan_pokok,simpanan_sukarela").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at,sumber_transaksi").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA")]);
   if(aRes.error)throw aRes.error;if(wRes.error)throw wRes.error;if(sRes.error)throw sRes.error;if(waRes.error)throw waRes.error;
   const anggota=aRes.data||[],wajib=wRes.data||[],sukarela=sRes.data||[],waAllowed=waRes.data||[],byId=new Map(anggota.map(a=>[a.id,a]));
   const totalPokok=anggota.reduce((s,a)=>s+Number(a.simpanan_pokok||0),0),totalSukarela=sukarela.reduce((s,a)=>s+Number(a.jumlah||0),0),totalWajib=wajib.reduce((s,a)=>s+Number(a.jumlah||0),0);
@@ -82,8 +82,8 @@ async function renderDashboard(){
     const today=now.toISOString().slice(0,10);
     const txNo="TRX-"+String(now.getFullYear()).slice(2)+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Math.floor(Math.random()*900)+100);
     const memberOptions=anggota.map(a=>`<option value="${esc(a.id)}">${esc(a.no_anggota)} — ${esc(a.nama)}</option>`).join("");
-    const history=[...wajib.map(w=>({date:w.created_at||String(w.tahun)+"-"+String(w.bulan).padStart(2,"0")+"-01T00:00:00",member:byId.get(w.anggota_id)?.nama||"-",category:"Simpanan Wajib",amount:Number(w.jumlah||0),status:"Berhasil"})),...anggota.filter(a=>Number(a.simpanan_pokok||0)>0).map(a=>({date:a.created_at||a.tanggal_masuk+"T00:00:00",member:a.nama||"-",category:"Simpanan Pokok",amount:Number(a.simpanan_pokok||0),status:"Berhasil"}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
-    const historyRows=history.map(h=>`<tr><td>${dateId(h.date)}</td><td>${esc(h.member)}</td><td>${esc(h.category)}</td><td><b>${rupiah(h.amount)}</b></td><td><span class="status-pill success">${h.status}</span></td><td>—</td></tr>`).join("")||'<tr><td colspan="6" class="empty">Belum ada riwayat transaksi.</td></tr>';
+    const history=[...wajib.map(w=>({date:w.created_at||String(w.tahun)+"-"+String(w.bulan).padStart(2,"0")+"-01T00:00:00",member:byId.get(w.anggota_id)?.nama||"-",category:"Simpanan Wajib",amount:Number(w.jumlah||0),status:"Berhasil",source:w.sumber_transaksi||"WEB"})),...anggota.filter(a=>Number(a.simpanan_pokok||0)>0).map(a=>({date:a.created_at||a.tanggal_masuk+"T00:00:00",member:a.nama||"-",category:"Simpanan Pokok",amount:Number(a.simpanan_pokok||0),status:"Berhasil"}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+    const historyRows=history.map(h=>`<tr><td>${dateId(h.date)}</td><td>${esc(h.member)}</td><td>${esc(h.category)}</td><td><b>${rupiah(h.amount)}</b></td><td><span class="status-pill pending">${h.source||"WEB"}</span></td><td><span class="status-pill success">${h.status}</span></td><td>—</td></tr>`).join("")||'<tr><td colspan="7" class="empty">Belum ada riwayat transaksi.</td></tr>';
     content.innerHTML=`
       <section class="transaction-head"><div><h2>Entri Data Transaksi</h2><p>Catat simpanan pokok dan simpanan wajib anggota.</p></div></section>
       <section class="transaction-grid">
@@ -117,7 +117,7 @@ async function renderDashboard(){
             <div><span>Status</span><span class="status-pill pending">Siap disimpan</span></div>
           </div>
         </article>
-        <section class="card recent-card transaction-history"><div class="section-head"><div><p class="eyebrow">Riwayat Entri</p><h3>Transaksi Terbaru</h3></div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${historyRows}</tbody></table></div></section></div></section>`;
+        <section class="card recent-card transaction-history"><div class="section-head"><div><p class="eyebrow">Riwayat Entri</p><h3>Transaksi Terbaru</h3></div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Sumber</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${historyRows}</tbody></table></div></section></div></section>`;
     const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment"),amountHint=document.getElementById("txAmountHint");
     let payment="Tunai";
     const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));const isWajib=category.value==="wajib";memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=isWajib?"Simpanan Wajib":"Simpanan Pokok";sumAmount.textContent=rupiah(amount.value);amountHint.textContent=isWajib?"Simpanan Wajib: nominal harus kelipatan Rp10.000.":"Simpanan Pokok: nominal bebas.";};
@@ -152,8 +152,8 @@ async function renderDashboard(){
             const alokasi=Math.min(sisa,kapasitas);
             if(alokasi>0){
               const result=existing
-                ? await supabase.from("koperasi_simpanan_wajib").update({jumlah:sudah+alokasi}).eq("id",existing.id)
-                : await supabase.from("koperasi_simpanan_wajib").insert({anggota_id:a.id,tahun,bulan,jumlah:alokasi});
+                ? await supabase.from("koperasi_simpanan_wajib").update({jumlah:sudah+alokasi,sumber_transaksi:"WEB"}).eq("id",existing.id)
+                : await supabase.from("koperasi_simpanan_wajib").insert({anggota_id:a.id,tahun,bulan,jumlah:alokasi,sumber_transaksi:"WEB"});
               if(result.error)throw result.error;
               if(existing)existing.jumlah=sudah+alokasi;
             }
@@ -229,7 +229,7 @@ async function renderDashboard(){
     document.getElementById("editNameDetail").onclick=()=>editMemberName(a.id);
     document.getElementById("wajibForm").onsubmit=async e=>{
       e.preventDefault();const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;btn.textContent="Menyimpan...";
-      try{const tahun=Number(document.getElementById("wTahun").value),bulan=Number(document.getElementById("wBulan").value),jumlah=Number(document.getElementById("wJumlah").value||0);if(jumlah<=0)throw new Error("Jumlah setoran harus lebih dari 0.");const existing=rows.find(w=>Number(w.tahun)===tahun&&Number(w.bulan)===bulan);let result=existing?await supabase.from("koperasi_simpanan_wajib").update({jumlah:Number(existing.jumlah||0)+jumlah}).eq("id",existing.id):await supabase.from("koperasi_simpanan_wajib").insert({anggota_id:a.id,tahun,bulan,jumlah});if(result.error)throw result.error;location.reload();}catch(err){alert("Gagal menyimpan setoran wajib: "+(err?.message||String(err)));btn.disabled=false;btn.textContent="+ Simpan"}
+      try{const tahun=Number(document.getElementById("wTahun").value),bulan=Number(document.getElementById("wBulan").value),jumlah=Number(document.getElementById("wJumlah").value||0);if(jumlah<=0)throw new Error("Jumlah setoran harus lebih dari 0.");const existing=rows.find(w=>Number(w.tahun)===tahun&&Number(w.bulan)===bulan);let result=existing?await supabase.from("koperasi_simpanan_wajib").update({jumlah:Number(existing.jumlah||0)+jumlah,sumber_transaksi:"WEB"}).eq("id",existing.id):await supabase.from("koperasi_simpanan_wajib").insert({anggota_id:a.id,tahun,bulan,jumlah,sumber_transaksi:"WEB"});if(result.error)throw result.error;location.reload();}catch(err){alert("Gagal menyimpan setoran wajib: "+(err?.message||String(err)));btn.disabled=false;btn.textContent="+ Simpan"}
     };
     document.getElementById("sukarelaForm").onsubmit=async e=>{
       e.preventDefault();const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;btn.textContent="Menyimpan...";
@@ -321,12 +321,12 @@ async function renderDashboard(){
               <input id="wajibSearch" class="search" type="search" placeholder="Cari nomor anggota atau nama...">
             </div>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>Bulan</th><th>Nominal</th><th>Tanggal Entri</th><th>Status</th></tr></thead><tbody id="wajibRows"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>Bulan</th><th>Nominal</th><th>Tanggal Entri</th><th>Sumber</th><th>Status</th></tr></thead><tbody id="wajibRows"></tbody></table></div>
         </section>`;
       const draw=()=>{
         const q=String(document.getElementById("wajibSearch").value||"").toLowerCase();
         const list=rows.filter(w=>{const a=byId.get(w.anggota_id)||{};return !q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q)});
-        document.getElementById("wajibRows").innerHTML=list.map(w=>{const a=byId.get(w.anggota_id)||{};return `<tr><td><b>${esc(a.no_anggota||"-")}</b></td><td><b>${esc(a.nama||"-")}</b></td><td>${months[Number(w.bulan)-1]||"-"} ${w.tahun}</td><td><b>${rupiah(w.jumlah)}</b></td><td>${dateId(w.created_at)}</td><td><span class="status-pill success">Terbayar</span></td></tr>`}).join("")||'<tr><td colspan="6" class="empty">Tidak ada data pada periode ini.</td></tr>';
+        document.getElementById("wajibRows").innerHTML=list.map(w=>{const a=byId.get(w.anggota_id)||{};return `<tr><td><b>${esc(a.no_anggota||"-")}</b></td><td><b>${esc(a.nama||"-")}</b></td><td>${months[Number(w.bulan)-1]||"-"} ${w.tahun}</td><td><b>${rupiah(w.jumlah)}</b></td><td>${dateId(w.created_at)}</td><td><span class="status-pill pending">${w.sumber_transaksi||"WEB"}</span></td><td><span class="status-pill success">Terbayar</span></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ada data pada periode ini.</td></tr>';
       };
       document.getElementById("wajibYear").onchange=e=>{selectedYear=Number(e.target.value);render()};
       document.getElementById("wajibMonth").onchange=e=>{selectedMonth=Number(e.target.value);render()};
