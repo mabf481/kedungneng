@@ -6,3 +6,8 @@
 .transaction-form-card{min-width:0;overflow:hidden}.transaction-form{min-width:0}.form-grid{min-width:0}.form-grid>label{min-width:0}.form-grid input,.form-grid select,.form-grid textarea{min-width:0;max-width:100%}
 #txNo{max-width:210px}.form-grid label:has(#txAmount){max-width:230px}#txAmount{max-width:230px}.form-grid label.full{min-width:0}#txNote{max-width:100%;min-height:70px}
 @media(max-width:900px){#txNo,#txAmount{max-width:100%}}
+
+/* Penyesuaian khusus Keterangan Transaksi: samakan lebar dengan kolom tombol Tunai */
+.transaction-form #txNote{width:100%;max-width:100%;min-height:70px;resize:none}
+.transaction-form .form-grid label.full:has(#txNote){width:calc(50% - 8px);max-width:calc(50% - 8px)}
+@media(max-width:560px){.transaction-form .form-grid label.full:has(#txNote){width:100%;max-width:100%}.transaction-form #txNote{width:100%;max-width:100%}}
