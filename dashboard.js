@@ -102,9 +102,7 @@ async function renderDashboard(){
             <div class="transaction-actions"><button type="submit" class="detail-btn primary">▣ Simpan Transaksi</button><button type="button" id="resetTx" class="detail-btn">↻ Reset</button></div>
           </form>
         </article>
-<section class="card recent-card transaction-history"><div class="section-head"><div><p class="eyebrow">Riwayat Entri</p><h3>Transaksi Terbaru</h3></div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${historyRows}</tbody></table></div></section>`;
-        </div>
-      </section>
+        <div class="transaction-side">
         <article class="card transaction-summary">
           <div class="section-head"><div><p class="eyebrow">Ringkasan Transaksi</p><h2>Detail</h2></div></div>
           <div class="summary-list">
@@ -115,7 +113,10 @@ async function renderDashboard(){
             <div><span>Metode Pembayaran</span><b id="sumPayment">Tunai</b></div>
             <div><span>Status</span><span class="status-pill pending">Siap disimpan</span></div>
           </div>
-        </article>    const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment");
+        </article>
+        <section class="card recent-card transaction-history"><div class="section-head"><div><p class="eyebrow">Riwayat Entri</p><h3>Transaksi Terbaru</h3></div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${historyRows}</tbody></table></div></section>`
+        </div>
+      </section>    const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment");
     let payment="Tunai";
     const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=category.value==="pokok"?"Simpanan Pokok":"Simpanan Wajib";sumAmount.textContent=rupiah(amount.value)};
     member.onchange=sync;category.onchange=sync;amount.oninput=sync;
