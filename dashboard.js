@@ -132,6 +132,10 @@ async function renderDashboard(){
       const jumlah=Number(amount.value||0),tgl=document.getElementById("txDate").value;
       if(!a){alert("Pilih anggota terlebih dahulu.");return}
       if(jumlah<=0){alert("Nominal harus lebih dari 0.");return}
+      if(category.value==="wajib" && jumlah%10000!==0){
+        alert("Pembayaran simpanan wajib harus kelipatan Rp10.000.");
+        return;
+      }
       const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;btn.textContent="Menyimpan...";
       try{
         if(category.value==="pokok"){
