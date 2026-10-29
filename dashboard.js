@@ -97,7 +97,7 @@ async function renderDashboard(){
               <label>Nama Anggota<input id="txMemberName" readonly placeholder="Nama anggota akan tampil"></label>
               <label>Kategori Transaksi<select id="txCategory"><option value="wajib">Simpanan Wajib</option><option value="pokok">Simpanan Pokok</option></select></label>
               <label>Jenis Arus<div class="flow-buttons"><button type="button" id="flowMasuk" class="flow-btn active">↓ Masuk</button><button type="button" id="flowKeluar" class="flow-btn" disabled>↑ Keluar</button></div></label>
-              <label>Nominal<input id="txAmount" type="number" min="1" step="1000" value="10000" required></label>
+              <label>Nominal<input id="txAmount" type="number" min="1" step="1" value="10000" required></label>
               <label>Metode Pembayaran<div class="flow-buttons"><button type="button" id="payTunai" class="pay-btn active">▣ Tunai</button><button type="button" id="payTransfer" class="pay-btn">▤ Transfer</button></div></label>
               <label>Nomor Referensi<input id="txRef" placeholder="Opsional"></label>
               <label class="full">Keterangan<textarea id="txNote" maxlength="200" placeholder="Keterangan transaksi"></textarea><small id="txCount">0/200</small></label>
