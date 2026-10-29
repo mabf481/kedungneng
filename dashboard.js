@@ -97,7 +97,7 @@ async function renderDashboard(){
               <label>Nama Anggota<input id="txMemberName" readonly placeholder="Nama anggota akan tampil"></label>
               <label>Kategori Transaksi<select id="txCategory"><option value="wajib">Simpanan Wajib</option><option value="pokok">Simpanan Pokok</option></select></label>
               <label>Jenis Arus<div class="flow-buttons"><button type="button" id="flowMasuk" class="flow-btn active">↓ Masuk</button><button type="button" id="flowKeluar" class="flow-btn" disabled>↑ Keluar</button></div></label>
-              <label>Nominal<input id="txAmount" type="number" min="1" step="1" value="10000" required></label>
+              <label>Nominal<input id="txAmount" type="number" min="1" step="1" value="10000" required><small id="txAmountHint">Simpanan Wajib: nominal harus kelipatan Rp10.000.</small></label>
               <label>Metode Pembayaran<div class="flow-buttons"><button type="button" id="payTunai" class="pay-btn active">▣ Tunai</button><button type="button" id="payTransfer" class="pay-btn">▤ Transfer</button></div></label>
               <label>Nomor Referensi<input id="txRef" placeholder="Opsional"></label>
               <label class="full">Keterangan<textarea id="txNote" maxlength="200" placeholder="Keterangan transaksi"></textarea><small id="txCount">0/200</small></label>
@@ -118,9 +118,9 @@ async function renderDashboard(){
           </div>
         </article>
         <section class="card recent-card transaction-history"><div class="section-head"><div><p class="eyebrow">Riwayat Entri</p><h3>Transaksi Terbaru</h3></div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${historyRows}</tbody></table></div></section></div></section>`;
-    const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment");
+    const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment"),amountHint=document.getElementById("txAmountHint");
     let payment="Tunai";
-    const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=category.value==="pokok"?"Simpanan Pokok":"Simpanan Wajib";sumAmount.textContent=rupiah(amount.value)};
+    const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));const isWajib=category.value==="wajib";memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=isWajib?"Simpanan Wajib":"Simpanan Pokok";sumAmount.textContent=rupiah(amount.value);amountHint.textContent=isWajib?"Simpanan Wajib: nominal harus kelipatan Rp10.000.":"Simpanan Pokok: nominal bebas.";};
     member.onchange=sync;category.onchange=sync;amount.oninput=sync;
     document.getElementById("payTunai").onclick=()=>{payment="Tunai";document.getElementById("payTunai").classList.add("active");document.getElementById("payTransfer").classList.remove("active");sumPayment.textContent=payment};
     document.getElementById("payTransfer").onclick=()=>{payment="Transfer";document.getElementById("payTransfer").classList.add("active");document.getElementById("payTunai").classList.remove("active");sumPayment.textContent=payment};
@@ -289,7 +289,7 @@ async function renderDashboard(){
       setStatus("Data Supabase • "+rows.length+" transaksi");
       content.innerHTML=`
         <section class="dashboard-head anggota-head">
-          <div><h2>Simpanan Wajib</h2><p>Kelola setoran wajib anggota berdasarkan periode. Data ditampilkan langsung dari Supabase.</p></div>
+          <div><h2>Simpanan Wajib</h2><p>Kelola setoran wajib anggota berdasarkan periode. Data ditampilkan langsung dari Supabase.</p><p class="message" style="margin-top:10px">Ketentuan: pembayaran simpanan wajib harus kelipatan <b>Rp10.000</b>. Contoh: Rp10.000, Rp20.000, Rp30.000.</p></div>
           <div class="period-tools"><div class="period"><span>▣</span> ${months[selectedMonth-1]} ${selectedYear}</div></div>
         </section>
         <section class="stats anggota-stats">
