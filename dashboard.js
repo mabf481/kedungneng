@@ -240,18 +240,46 @@ async function renderDashboard(){
     setTitle("Simpanan Wajib");
     const years=[...new Set(wajib.map(w=>Number(w.tahun)).filter(Boolean))].sort((a,b)=>b-a);
     let selectedYear=years[0]||new Date().getFullYear();
-    let selectedMonth=1;
+    let selectedMonth=new Date().getMonth()+1;
     const months=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    const availableMonths=year=>new Set(wajib.filter(w=>Number(w.tahun)===Number(year)).map(w=>Number(w.bulan)));
     const render=()=>{
-      const monthSet=availableMonths(selectedYear);
-      if(!monthSet.has(selectedMonth)) selectedMonth=[...monthSet].sort((a,b)=>a-b)[0]||1;
       const rows=wajib.filter(w=>Number(w.tahun)===Number(selectedYear)&&Number(w.bulan)===Number(selectedMonth));
       const total=rows.reduce((s,w)=>s+Number(w.jumlah||0),0);
-      setStatus(rupiah(total)+" • "+rows.length+" transaksi");
-      content.innerHTML=stats()+`<section class="card"><div class="section-head"><div><p class="eyebrow">Transaksi Wajib</p><h2>Simpanan Wajib</h2></div><label class="search" style="display:flex;align-items:center;gap:8px">Tahun <select id="wajibYear" style="border:0;background:transparent;font:inherit;outline:none">${years.map(y=>`<option value="${y}" ${Number(y)===Number(selectedYear)?"selected":""}>${y}</option>`).join("")}</select></label></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:16px 0">${months.map((m,i)=>{const n=i+1,has=monthSet.has(n);return`<button type="button" data-month="${n}" ${has?"":"disabled"} style="padding:12px;border:1px solid var(--border,#ddd);border-radius:10px;background:${n===selectedMonth?"var(--accent,#111)":"var(--surface,#fff)"};color:${n===selectedMonth?"#fff":"inherit"};cursor:${has?"pointer":"not-allowed"};opacity:${has?1:.45}">${m}</button>`}).join("")}</div><div class="section-head"><div><p class="eyebrow">Periode</p><h3>${months[selectedMonth-1]} ${selectedYear}</h3></div><strong>${rupiah(total)}</strong></div><div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama</th><th>Jumlah</th></tr></thead><tbody>${rows.map(w=>{const a=byId.get(w.anggota_id)||{};return`<tr><td><b>${esc(a.no_anggota||"-")}</b></td><td>${esc(a.nama||"-")}</td><td><b>${rupiah(w.jumlah)}</b></td></tr>`}).join("")||'<tr><td colspan="3" class="empty">Belum ada data untuk bulan ini.</td></tr>'}</tbody></table></div></section>`;
+      const anggotaBayar=new Set(rows.map(w=>String(w.anggota_id)));
+      const belumBayar=anggota.filter(a=>!anggotaBayar.has(String(a.id))).length;
+      const rata=rows.length?total/rows.length:0;
+      setStatus("Data Supabase • "+rows.length+" transaksi");
+      content.innerHTML=`
+        <section class="dashboard-head anggota-head">
+          <div><h2>Simpanan Wajib</h2><p>Kelola setoran wajib anggota berdasarkan periode. Data ditampilkan langsung dari Supabase.</p></div>
+          <div class="period-tools"><div class="period"><span>▣</span> ${months[selectedMonth-1]} ${selectedYear}</div></div>
+        </section>
+        <section class="stats anggota-stats">
+          <article class="stat-card modern"><div class="stat-icon">Rp</div><div><span>Total Periode</span><strong>${rupiah(total)}</strong><small class="trend up">↑ <em>${rows.length} transaksi</em></small></div></article>
+          <article class="stat-card modern"><div class="stat-icon">♙</div><div><span>Sudah Bayar</span><strong>${anggotaBayar.size}</strong><small class="trend up">↑ <em>anggota</em></small></div></article>
+          <article class="stat-card modern"><div class="stat-icon">!</div><div><span>Belum Bayar</span><strong>${belumBayar}</strong><small class="trend neutral"><em>anggota</em></small></div></article>
+          <article class="stat-card modern"><div class="stat-icon">Rp</div><div><span>Rata-rata Setoran</span><strong>${rupiah(rata)}</strong><small class="trend neutral"><em>per transaksi</em></small></div></article>
+        </section>
+        <section class="card wajib-list-card">
+          <div class="section-head anggota-list-head">
+            <div><p class="eyebrow">Data Supabase</p><h2>Daftar Simpanan Wajib</h2></div>
+            <div class="anggota-tools">
+              <select id="wajibYear" class="year-select">${years.map(y=>`<option value="${y}" ${Number(y)===Number(selectedYear)?"selected":""}>${y}</option>`).join("")}</select>
+              <select id="wajibMonth" class="year-select">${months.map((m,i)=>`<option value="${i+1}" ${i+1===selectedMonth?"selected":""}>${m}</option>`).join("")}</select>
+              <input id="wajibSearch" class="search" type="search" placeholder="Cari nomor anggota atau nama...">
+            </div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>Bulan</th><th>Nominal</th><th>Tanggal Entri</th><th>Status</th></tr></thead><tbody id="wajibRows"></tbody></table></div>
+        </section>`;
+      const draw=()=>{
+        const q=String(document.getElementById("wajibSearch").value||"").toLowerCase();
+        const list=rows.filter(w=>{const a=byId.get(w.anggota_id)||{};return !q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q)});
+        document.getElementById("wajibRows").innerHTML=list.map(w=>{const a=byId.get(w.anggota_id)||{};return `<tr><td><b>${esc(a.no_anggota||"-")}</b></td><td><b>${esc(a.nama||"-")}</b></td><td>${months[Number(w.bulan)-1]||"-"} ${w.tahun}</td><td><b>${rupiah(w.jumlah)}</b></td><td>${dateId(w.created_at)}</td><td><span class="status-pill success">Terbayar</span></td></tr>`}).join("")||'<tr><td colspan="6" class="empty">Tidak ada data pada periode ini.</td></tr>';
+      };
       document.getElementById("wajibYear").onchange=e=>{selectedYear=Number(e.target.value);render()};
-      document.querySelectorAll("[data-month]").forEach(btn=>btn.onclick=()=>{selectedMonth=Number(btn.dataset.month);render()});
+      document.getElementById("wajibMonth").onchange=e=>{selectedMonth=Number(e.target.value);render()};
+      document.getElementById("wajibSearch").oninput=draw;
+      draw();
     };
     render();
   }
