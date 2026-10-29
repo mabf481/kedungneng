@@ -22,6 +22,18 @@ async function renderDashboard(){
   const canManageAdmins=currentEmail===ADMIN_EMAIL || adminProfile?.role==="super_admin";
   document.body.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><p class="eyebrow">LLP Kedungneng</p><h2>Admin Panel</h2></div><nav class="nav"><button data-menu="dashboard" class="active">Dashboard</button><button data-menu="transaksi">Transaksi</button><button data-menu="anggota">Anggota</button><button data-menu="wajib">Simpanan Wajib</button><button data-menu="aksesbot">Akses Bot WA</button>${canManageAdmins?'<button data-menu="admin">Admin</button>':''}</nav><div class="sidebar-footer"><button id="logout" class="logout">Keluar</button></div></aside><section class="main-area"><header class="topbar"><div><p class="eyebrow">LLP Kedungneng</p><h1 id="pageTitle">Dashboard</h1></div><span id="status" class="muted status">Memuat data...</span></header><main class="container" id="content"></main></section></div>`;
   document.getElementById("logout").onclick=async()=>{await supabase.auth.signOut();location.replace("/")};
+  let realtimeTimer=null;
+  const refreshFromRealtime=()=>{
+    clearTimeout(realtimeTimer);
+    realtimeTimer=setTimeout(()=>location.reload(),250);
+  };
+  supabase.channel("koperasi-dashboard-realtime")
+    .on("postgres_changes",{event:"*",schema:"public",table:"koperasi_anggota"},refreshFromRealtime)
+    .on("postgres_changes",{event:"*",schema:"public",table:"koperasi_simpanan_wajib"},refreshFromRealtime)
+    .on("postgres_changes",{event:"*",schema:"public",table:"koperasi_simpanan_sukarela"},refreshFromRealtime)
+    .on("postgres_changes",{event:"*",schema:"public",table:"wa_allowed_numbers"},refreshFromRealtime)
+    .on("postgres_changes",{event:"*",schema:"public",table:"koperasi_admin"},refreshFromRealtime)
+    .subscribe();
   const [aRes,wRes,sRes,waRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,jenis_kelamin,tanggal_masuk,simpanan_pokok,simpanan_sukarela").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at,sumber_transaksi").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA")]);
   if(aRes.error)throw aRes.error;if(wRes.error)throw wRes.error;if(sRes.error)throw sRes.error;if(waRes.error)throw waRes.error;
   const anggota=aRes.data||[],wajib=wRes.data||[],sukarela=sRes.data||[],waAllowed=waRes.data||[],byId=new Map(anggota.map(a=>[a.id,a]));
