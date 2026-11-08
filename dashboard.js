@@ -328,75 +328,58 @@ async function renderDashboard(){
     document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
   }
   function lihatFormPendaftaran(id){const a=anggota.find(x=>String(x.id)===String(id));if(!a){alert("Data anggota tidak ditemukan.");return}cetakFormPendaftaran(a,false)}
-  function cetakFormPendaftaran(a,autoPrint=true){
-    const fmtDate=(v)=>{
-      if(!v)return "-";
-      const d=new Date(v+"T00:00:00");
-      return d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
-    };
-    const hariIni=fmtDate(new Date().toISOString().slice(0,10));
-    const gender=String(a.jenis_kelamin||"").toUpperCase().startsWith("L")?"Laki - Laki":"Perempuan";
-    const alamat=esc(a.alamat||"-").replace(/\n/g,"<br>");
-    const html=`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Formulir Pendaftaran - ${esc(a.nama)}</title>
-      <style>
-        @page{size:A4;margin:18mm 18mm 15mm 18mm}*{box-sizing:border-box}body{font-family:"Times New Roman",serif;color:#111;margin:0;font-size:12pt;line-height:1.35}
-        .kop{text-align:center}.kop .title{font-weight:bold;font-size:15pt;letter-spacing:.2px}.kop .name{font-weight:bold;font-size:14pt}.kop .ahu{font-size:11pt;margin-top:2px}.kop .addr{font-size:10.5pt}.line{border-top:1.5px solid #111;margin-top:8px}
-        h1{text-align:center;font-size:14pt;margin:25px 0 25px;font-weight:bold}.data{margin-left:5mm}.row{display:grid;grid-template-columns:47mm 6mm 1fr;margin:5px 0}.label{white-space:nowrap}.value{min-height:18px}.statement{margin-top:26px;text-align:justify}.signature{margin-top:36px;text-align:center;margin-left:55%}.signature .date{margin-bottom:28px}.signature .role{margin-bottom:42px}.signature .name{font-weight:bold;text-decoration:underline}.note{margin-top:38px;font-size:10.5pt}
-        @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
-      </style></head><body>
-      <div class="kop"><div class="title">KOPERASI PERTANIAN</div><div class="name">LANGENG LUMBUNG PANGAN KEDUNGNENG</div><div class="ahu">AHU-0005273.AH.01.29.Tahun 2023</div><div class="addr">Jl. Lapangan Bola Andalas, RT 01 RW 03 Desa Kedunngneng</div><div class="addr">Kec. Losari Kab. Brebed Jawa Tengah 52255</div><div class="addr">e-mail : koptanllpkedungneng@gmail.com</div><div class="line"></div></div>
-      <h1>Formulir Pendaftaran Anggota Baru</h1>
-      <div class="data">
-        <div class="row"><div class="label">Nama Lengkap</div><div>:</div><div class="value">${esc(a.nama)}</div></div>
-        <div class="row"><div class="label">Nomor Induk Kependudukan</div><div>:</div><div class="value">${esc(a.no_induk_kependudukan||"-")}</div></div>
-        <div class="row"><div class="label">Tempat, Tanggal Lahir</div><div>:</div><div class="value">${esc(a.tempat_lahir||"-")}, ${fmtDate(a.tanggal_lahir)}</div></div>
-        <div class="row"><div class="label">Jenis Kelamin</div><div>:</div><div class="value">${gender}</div></div>
-        <div class="row"><div class="label">Alamat</div><div>:</div><div class="value">${alamat}</div></div>
-        <div class="row"><div class="label">No HP</div><div>:</div><div class="value">${esc(a.no_hp||"-")}</div></div>
-      </div>
-      <div class="statement">Saya menyatakan untuk di daftar sebagai anggota Koperasi Produsen Pertanian Langgeng Lumbung Pangan dengan sukarela dan bersedia memenuhi / mematuhi segala hak dan kewajiban sebagai anggota sebagaimana tersebut dalam Angaran Dasar (AD) dan Anggaran Rumah Tangga (ART) serta ketentuan Koperasi Produsen Pertanian Langgeng Lumbung Pangan.</div>
-      <div class="signature"><div class="date">Brebes, ${hariIni}</div><div class="role">Pemohon</div><div class="name">${esc(a.nama)}</div><div>___________________________</div></div>
-      <div class="note">Note : Lampirkan foto copy KTP yang masih berlaku</div>
-      </body></html>`;
-    let modal=document.getElementById("formPendaftaranModal");
-    if(modal)modal.remove();
-    modal=document.createElement("div");
-    modal.id="formPendaftaranModal";
-    modal.innerHTML=`
-      <div class="form-modal-backdrop">
-        <div class="form-modal-card" role="dialog" aria-modal="true" aria-label="Formulir Pendaftaran">
-          <div class="form-modal-head">
-            <div><p class="eyebrow">Formulir Anggota</p><h2>${esc(a.nama||"Anggota")}</h2></div>
-            <button type="button" class="form-modal-close" aria-label="Tutup">×</button>
-          </div>
-          <div class="form-modal-body"><iframe title="Formulir Pendaftaran" class="form-modal-frame"></iframe></div>
-          <div class="form-modal-actions"><button type="button" class="detail-btn" data-modal-close>Tutup</button><button type="button" class="detail-btn primary" data-modal-print>🖨 Cetak</button></div>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-    const styleId="formPendaftaranModalStyle";
-    if(!document.getElementById(styleId)){
-      const style=document.createElement("style");style.id=styleId;style.textContent=`
-        .form-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99999}
-        .form-modal-card{width:min(960px,96vw);height:min(92vh,900px);background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
-        .form-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e5e7eb;background:#fff}
-        .form-modal-head h2{margin:0;font-size:20px}.form-modal-head .eyebrow{margin:0 0 3px}
-        .form-modal-close{border:0;background:transparent;font-size:30px;line-height:1;cursor:pointer;color:#64748b;padding:4px 8px}
-        .form-modal-body{flex:1;min-height:0;background:#e5e7eb;padding:14px}.form-modal-frame{width:100%;height:100%;border:1px solid #d1d5db;background:#fff;border-radius:8px}
-        .form-modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #e5e7eb;background:#fff}
-        @media(max-width:700px){.form-modal-backdrop{padding:8px}.form-modal-card{width:100%;height:96vh;border-radius:12px}.form-modal-body{padding:6px}.form-modal-head{padding:12px 14px}.form-modal-actions{padding:10px 14px}}
-      `;document.head.appendChild(style);
+  async function cetakFormPendaftaran(a,autoPrint=true){
+    if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
+    const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
+    const templateUrl="./daftar-koperasi.pdf?v=20261109-1";
+    try{
+      const response=await fetch(templateUrl,{cache:"no-store"});
+      if(!response.ok)throw new Error("Template PDF tidak ditemukan ("+response.status+").");
+      const bytes=await response.arrayBuffer();
+      const pdf=await PDFDocument.load(bytes);
+      const page=pdf.getPages()[0];
+      const width=page.getWidth(),height=page.getHeight();
+      const font=await pdf.embedFont(StandardFonts.Helvetica);
+      const fontSize=13;
+      const white=rgb(1,1,1);
+      const cover=(x,y,w,h)=>page.drawRectangle({x,y,width:w,height:h,color:white});
+      const text=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:rgb(0,0,0)});
+      const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
+      const fmtDate=v=>{if(!v)return"-";const d=new Date(v+"T00:00:00");return Number.isNaN(d.getTime())?"-":d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})};
+      const today=fmtDate(new Date().toISOString().slice(0,10));
+      const birth=a.tanggal_lahir?String(a.tempat_lahir||"-")+", "+fmtDate(a.tanggal_lahir):String(a.tempat_lahir||"-");
+      const gender=String(a.jenis_kelamin||"").toUpperCase()==="P"?"Perempuan":"Laki - Laki";
+      const alamat=String(a.alamat||"-").replace(/\\r?\\n/g," ").replace(/\\s+/g," ").trim();
+      const hp=String(a.no_hp||"-");
+      const name=String(a.nama||"-");
+      const nik=String(a.no_induk_kependudukan||"-");
+      cover(252,620,310,32);text(name,256,628,13);
+      cover(252,596,310,32);text(nik,256,605,13);
+      cover(252,573,310,32);text(birth,256,582,13);
+      cover(252,550,310,32);text(gender,256,559,13);
+      cover(252,505,310,54);
+      const addressLines=wrap(alamat,47).slice(0,2);addressLines.forEach((line,i)=>text(line,256,526-i*23,13));
+      cover(252,477,310,32);text(hp,256,486,13);
+      cover(360,508,205,34);text("Brebes, "+today,363,517,13);
+      cover(392,164,150,38);text(name,396,177,13);
+      const out=await pdf.save();
+      const blob=new Blob([out],{type:"application/pdf"});
+      const url=URL.createObjectURL(blob);
+      const old=document.getElementById("formPdfModal");if(old)old.remove();
+      const modal=document.createElement("div");modal.id="formPdfModal";
+      modal.style.cssText="position:fixed;inset:0;background:rgba(15,23,42,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box";
+      modal.innerHTML='<div style="width:min(1100px,96vw);height:min(94vh,900px);background:#fff;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.35)"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e5e7eb;gap:8px"><b>Formulir Pendaftaran Anggota</b><div style="display:flex;gap:8px"><button type="button" id="printFormPdf" class="detail-btn primary">Cetak</button><button type="button" id="closeFormPdf" class="detail-btn">Tutup</button></div></div><iframe id="formPdfFrame" title="Formulir Pendaftaran Anggota" style="border:0;width:100%;height:100%;background:#f3f4f6"></iframe></div>';
+      document.body.appendChild(modal);
+      const frame=document.getElementById("formPdfFrame");frame.src=url;
+      document.getElementById("closeFormPdf").onclick=()=>{URL.revokeObjectURL(url);modal.remove()};
+      document.getElementById("printFormPdf").onclick=()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(e){window.open(url,"_blank")}};
+      modal.addEventListener("click",e=>{if(e.target===modal)document.getElementById("closeFormPdf").click()});
+      if(autoPrint)setTimeout(()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(e){}},900);
+    }catch(err){
+      console.error("[Formulir PDF]",err);
+      alert("Gagal membuka formulir PDF: "+(err?.message||String(err)));
     }
-    const frame=modal.querySelector(".form-modal-frame");
-    const close=()=>modal.remove();
-    modal.querySelector(".form-modal-close").onclick=close;
-    modal.querySelector("[data-modal-close]").onclick=close;
-    modal.querySelector(".form-modal-backdrop").onclick=e=>{if(e.target===e.currentTarget)close()};
-    modal.querySelector("[data-modal-print]").onclick=()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(e){alert("Tidak dapat membuka dialog cetak.")}};
-    frame.srcdoc=html;
-    if(autoPrint)setTimeout(()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(e){}},500);
   }
-
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
     const rows=wajib.filter(w=>String(w.anggota_id)===String(a.id));
