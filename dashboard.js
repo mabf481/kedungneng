@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="./daftar.pdf?v=20261109-3";
+    const templateUrl="/daftar.pdf?v=20261109-4";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
