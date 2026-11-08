@@ -683,29 +683,25 @@ Deno.serve(async (req) => {
       );
 
     const reply = [
-      "Nama = " +
-        anggota.nama,
-
-      "Nomor Anggota = " +
-        anggota.no_anggota,
-
-      "Jumlah Simpanan Pokok = " +
-        rupiah(totalPokok),
-
-      "Jumlah Simpanan Wajib = " +
-        rupiah(totalWajib),
-
-      "Jumlah Simpanan = " +
-        rupiah(totalSimpanan),
-
+      "📋 *INFORMASI SIMPANAN ANGGOTA*",
       "",
-
-      "Jumlah Simpanan Wajib Bulan Tertunggak = " +
-        tunggakan.length +
-        " bulan",
-
-      "Jumlah Simpanan Wajib Rp tertunggak = " +
-        rupiah(totalTunggakan),
+      "👤 *Nama*",
+      anggota.nama,
+      "",
+      "🆔 *Nomor Anggota*",
+      anggota.no_anggota,
+      "",
+      "💰 *RINCIAN SIMPANAN*",
+      "• Simpanan Pokok : " + rupiah(totalPokok),
+      "• Simpanan Wajib : " + rupiah(totalWajib),
+      "• *Total Simpanan : " + rupiah(totalSimpanan) + "*",
+      "",
+      "⚠️ *TUNGGAKAN SIMPANAN WAJIB*",
+      "• Bulan Tertunggak : " + tunggakan.length + " bulan",
+      "• Jumlah Tunggakan : " + rupiah(totalTunggakan),
+      "",
+      "────────────────",
+      "🏦 *Koperasi LLP Kedungneng*",
     ].join("\n");
 
     EdgeRuntime.waitUntil(
