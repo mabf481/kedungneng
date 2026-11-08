@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-4";
+    const templateUrl="/daftar.pdf?v=20261109-5";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -341,7 +341,26 @@ async function renderDashboard(){
       if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-"){
         throw new Error("File daftar.pdf bukan PDF yang valid. Server mengembalikan "+(contentType||"data tanpa Content-Type")+".");
       }
-      const pdf=await PDFDocument.load(bytes);
+      // Hapus NIK bawaan dari template secara permanen sebelum mengisi data anggota.
+      // Template memakai raster/image, jadi redaction dilakukan dengan MuPDF.
+      let cleanBytes=bytes;
+      try{
+        const mupdf=await import("https://esm.sh/mupdf@1.28.1");
+        const doc=mupdf.Document.openDocument(bytes,"application/pdf");
+        const pdfDoc=doc.asPDF();
+        const p=pdfDoc.loadPage(0);
+        const redact=p.createAnnotation("Redact");
+        redact.setRect([245,214,395,241]);
+        redact.update();
+        p.applyRedactions();
+        cleanBytes=pdfDoc.saveToBuffer("").asUint8Array();
+        p.destroy();
+        doc.destroy();
+      }catch(redactErr){
+        console.error("[Formulir PDF] Gagal melakukan redaction NIK:",redactErr);
+        throw new Error("Gagal menghapus NIK bawaan template: "+(redactErr?.message||String(redactErr)));
+      }
+      const pdf=await PDFDocument.load(cleanBytes);
       const page=pdf.getPages()[0];
       const width=page.getWidth(),height=page.getHeight();
       const font=await pdf.embedFont(StandardFonts.Helvetica);
