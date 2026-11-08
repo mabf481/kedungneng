@@ -280,7 +280,7 @@ async function renderDashboard(){
     const hariIni=fmtDate(new Date().toISOString().slice(0,10));
     const gender=String(a.jenis_kelamin||"").toUpperCase().startsWith("L")?"Laki - Laki":"Perempuan";
     const alamat=esc(a.alamat||"-").replace(/\n/g,"<br>");
-    const html=\`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Formulir Pendaftaran - ${esc(a.nama)}</title>
+    const html=`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Formulir Pendaftaran - ${esc(a.nama)}</title>
       <style>
         @page{size:A4;margin:18mm 18mm 15mm 18mm}*{box-sizing:border-box}body{font-family:"Times New Roman",serif;color:#111;margin:0;font-size:12pt;line-height:1.35}
         .kop{text-align:center}.kop .title{font-weight:bold;font-size:15pt;letter-spacing:.2px}.kop .name{font-weight:bold;font-size:14pt}.kop .ahu{font-size:11pt;margin-top:2px}.kop .addr{font-size:10.5pt}.line{border-top:1.5px solid #111;margin-top:8px}
@@ -301,7 +301,7 @@ async function renderDashboard(){
       <div class="signature"><div class="date">Brebes, ${hariIni}</div><div class="role">Pemohon</div><div class="name">${esc(a.nama)}</div><div>___________________________</div></div>
       <div class="note">Note : Lampirkan foto copy KTP yang masih berlaku</div>
       <script>window.onload=()=>setTimeout(()=>window.print(),350);window.onafterprint=()=>window.close();</script>
-      </body></html>\`;
+      </body></html>`;
     const w=window.open("","_blank","width=900,height=1100");
     if(!w){alert("Form pendaftaran sudah dibuat, tetapi browser memblokir jendela cetak. Izinkan pop-up untuk dashboard ini lalu coba simpan lagi.");return}
     w.document.open();w.document.write(html);w.document.close();
