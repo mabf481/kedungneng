@@ -515,7 +515,7 @@ async function renderDashboard(){
   const pages={dashboard:pageDashboard,transaksi:pageTransaksi,anggota:pageAnggota,wajib:pageWajib,aksesbot:pageAksesBot,admin:pageAdmin};
   const menuPaths={dashboard:"/dashboard",transaksi:"/Transaksi",anggota:"/Anggota",wajib:"/simwajib",aksesbot:"/Aksesbot",admin:"/Admin"};
   const pathMenus=Object.fromEntries(Object.entries(menuPaths).map(([k,v])=>[v.toLowerCase(),k]));
-  const getMenuFromPath=()=>pathMenus[location.pathname.replace(/\\/+$/,"").toLowerCase()]||"dashboard";
+  const getMenuFromPath=()=>pathMenus[location.pathname.replace(/\/+$/,"").toLowerCase()]||"dashboard";
   const activateMenu=key=>{document.querySelectorAll("[data-menu]").forEach(b=>b.classList.toggle("active",b.dataset.menu===key));};
   const openMenu=(key,push=true)=>{if(!pages[key])key="dashboard";activateMenu(key);if(push){const target=menuPaths[key];if(location.pathname!==target)history.pushState({menu:key},"",target)};pages[key]();window.scrollTo({top:0,behavior:"instant"});};
   document.querySelectorAll("[data-menu]").forEach(btn=>btn.onclick=()=>openMenu(btn.dataset.menu,true));
