@@ -54,7 +54,7 @@ async function renderDashboard(){
   const setStatus=t=>document.getElementById("status").textContent=t,setTitle=t=>document.getElementById("pageTitle").textContent=t,content=document.getElementById("content");
   const stats=()=>`<section class="stats"><article class="stat-card"><span>Total Anggota</span><strong>${anggota.length}</strong></article><article class="stat-card"><span>Simpanan Pokok</span><strong>${rupiah(totalPokok)}</strong></article><article class="stat-card"><span>Simpanan Wajib</span><strong>${rupiah(totalWajib)}</strong></article></section>`;
   const anggotaTable=(list,extraTitle="Daftar Anggota")=>`<section class="card"><div class="section-head"><div><p class="eyebrow">Data Anggota</p><h2>${extraTitle}</h2></div><input id="search" class="search" type="search" placeholder="Cari nomor atau nama..."></div><div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama</th><th>L/P</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div></section>`;
-  const renderAnggotaRows=list=>{const el=document.getElementById("rows");if(!el)return;el.innerHTML=list.map(a=>`<tr><td><b>${esc(a.no_anggota)}</b></td><td>${esc(a.nama)}</td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td>${rupiah(a.simpanan_pokok)}</td><td><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button> <button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit Nama</button></td></tr>`).join("")||'<tr><td colspan="5" class="empty">Tidak ditemukan.</td></tr>';el.querySelectorAll("[data-member]").forEach(btn=>btn.onclick=()=>pageAnggotaDetail(btn.dataset.member));el.querySelectorAll("[data-edit-name]").forEach(btn=>btn.onclick=()=>editMemberName(btn.dataset.editName))};
+  const renderAnggotaRows=list=>{const el=document.getElementById("rows");if(!el)return;el.innerHTML=list.map(a=>`<tr><td><b>${esc(a.no_anggota)}</b></td><td>${esc(a.nama)}</td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td>${rupiah(a.simpanan_pokok)}</td><td><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button> <button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button> <button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></td></tr>`).join("")||'<tr><td colspan="6" class="empty">Tidak ditemukan.</td></tr>';el.querySelectorAll("[data-member]").forEach(btn=>btn.onclick=()=>pageAnggotaDetail(btn.dataset.member));el.querySelectorAll("[data-edit-name]").forEach(btn=>btn.onclick=()=>editMemberName(btn.dataset.editName));el.querySelectorAll("[data-delete-member]").forEach(btn=>btn.onclick=()=>deleteMember(btn.dataset.deleteMember))};
   const renderAnggotaSearch=()=>{const input=document.getElementById("search");if(!input)return;input.oninput=e=>{const q=e.target.value.toLowerCase();renderAnggotaRows(anggota.filter(a=>String(a.no_anggota).toLowerCase().includes(q)||String(a.nama).toLowerCase().includes(q)))}};
   async function editMemberName(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
@@ -73,6 +73,19 @@ async function renderDashboard(){
       alert("Nama anggota berhasil diubah.");
       if(document.getElementById("backAnggota"))pageAnggotaDetail(a.id);
     }catch(err){alert("Gagal mengubah nama: "+(err?.message||String(err)))}
+  };
+  async function deleteMember(id){
+    const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
+    const ok=confirm("Hapus anggota "+(a.nama||"-")+" ("+(a.no_anggota||"-")+")?\n\nData anggota akan dihapus dan tindakan ini tidak dapat dibatalkan.");
+    if(!ok)return;
+    try{
+      const {error}=await supabase.from("koperasi_anggota").delete().eq("id",a.id);
+      if(error)throw error;
+      const i=anggota.findIndex(x=>String(x.id)===String(a.id));
+      if(i>=0)anggota.splice(i,1);
+      alert("Anggota berhasil dihapus.");
+      pageAnggota();
+    }catch(err){alert("Gagal menghapus anggota: "+(err?.message||String(err)))}
   };
   async function pageDashboard(){
     setTitle("Dashboard Admin");setStatus("Data tersinkron di Supabase");
