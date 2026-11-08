@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-14";
+    const templateUrl="/daftar.pdf?v=20261109-15";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -352,7 +352,7 @@ async function renderDashboard(){
       const white=rgb(1,1,1);
       // Area NIK bawaan pada template (koordinat PDF).
       
-      const cover=(x,y,w,h)=>page.drawRectangle({x,y,width:w,height:h,color:white});
+      const cover=(x,y,w,h)=>{};
       const text=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:rgb(0,0,0)});
       const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
       const fmtDate=v=>{if(!v)return"-";const d=new Date(v+"T00:00:00");return Number.isNaN(d.getTime())?"-":d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})};
