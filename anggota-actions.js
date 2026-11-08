@@ -13,7 +13,6 @@
       if(!id) return;
 
       oldDetail?.remove();
-      oldEdit?.remove();
 
       const actionCell=row.querySelector("td:last-child");
       if(!actionCell) return;
