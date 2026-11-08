@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-15";
+    const templateUrl="/daftar.pdf?v=20261109-16";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -349,7 +349,6 @@ async function renderDashboard(){
       const width=page.getWidth(),height=page.getHeight();
       const font=await pdf.embedFont(StandardFonts.Helvetica);
       const fontSize=13;
-      const white=rgb(1,1,1);
       // Area NIK bawaan pada template (koordinat PDF).
       
       const cover=(x,y,w,h)=>{};
