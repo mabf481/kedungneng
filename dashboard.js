@@ -334,8 +334,12 @@ async function renderDashboard(){
     const templateUrl="./daftar-koperasi.pdf?v=20261109-1";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
-      if(!response.ok)throw new Error("Template PDF tidak ditemukan ("+response.status+").");
-      const bytes=await response.arrayBuffer();
+      if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar-koperasi.pdf ada di root repository.");
+      const contentType=(response.headers.get("content-type")||"").toLowerCase();
+      const bytes=new Uint8Array(await response.arrayBuffer());
+      if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-"){
+        throw new Error("File daftar-koperasi.pdf bukan PDF yang valid. Server mengembalikan "+(contentType||"data tanpa Content-Type")+".");
+      }
       const pdf=await PDFDocument.load(bytes);
       const page=pdf.getPages()[0];
       const width=page.getWidth(),height=page.getHeight();
