@@ -1,0 +1,17 @@
+name: Fix registration PDF
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m pip install PyMuPDF
+      - run: python scripts/fix_daftar_pdf.py
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: Fix registration PDF NIK
