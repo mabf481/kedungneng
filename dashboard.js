@@ -330,7 +330,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="./daftar.pdf?v=20261109-2";
+    const templateUrl="./daftar.pdf?v=20261109-3";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -357,7 +357,9 @@ async function renderDashboard(){
       const name=String(a.nama||"-");
       const nik=String(a.no_induk_kependudukan||"-");
       cover(252,620,310,32);text(name,256,639,13);
-      // NIK ditempatkan tepat 241 px dari sisi atas halaman PDF (96 dpi).\n      const nikTopPx=241,nikTopPt=nikTopPx*72/96,nikTextY=height-nikTopPt-13;\n      cover(252,nikTextY-9,310,32);text(nik,256,nikTextY,13);
+      // NIK ditempatkan tepat 241 px dari sisi atas halaman PDF (96 dpi).
+      const nikTopPx=241,nikTopPt=nikTopPx*72/96,nikTextY=height-nikTopPt-13;
+      cover(252,nikTextY-9,310,32);text(nik,256,nikTextY,13);
       cover(252,573,310,32);text(birth,256,582,13);
       cover(252,550,310,32);text(gender,256,559,13);
       cover(252,505,310,54);
