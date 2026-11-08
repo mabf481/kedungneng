@@ -509,7 +509,7 @@ Deno.serve(async (req) => {
     } = await supabase
       .from("koperasi_anggota")
       .select(
-        "id, no_anggota, nama, tanggal_masuk",
+        "id, no_anggota, nama, tanggal_masuk, simpanan_pokok",
       )
       .eq("id", memberId)
       .maybeSingle();
@@ -557,7 +557,7 @@ Deno.serve(async (req) => {
     } = await supabase
       .from("koperasi_anggota")
       .select(
-        "id, no_anggota, nama, tanggal_masuk",
+        "id, no_anggota, nama, tanggal_masuk, simpanan_pokok",
       )
       .ilike("nama", namaCari)
       .limit(2);
