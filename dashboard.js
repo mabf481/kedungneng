@@ -320,9 +320,9 @@ async function renderDashboard(){
     const render=list=>{
       const el=document.getElementById("rows");
       el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button><button type="button" class="detail-btn" data-view-form="${esc(a.id)}">Lihat Formulir</button><button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></div></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
-      el.querySelectorAll("[data-edit-name]").forEach(btn=>btn.onclick=()=>editMemberName(btn.dataset.editName));
-      el.querySelectorAll("[data-view-form]").forEach(btn=>btn.onclick=()=>lihatFormPendaftaran(btn.dataset.viewForm));
-      el.querySelectorAll("[data-delete-member]").forEach(btn=>btn.onclick=()=>deleteMember(btn.dataset.deleteMember));
+      el.querySelectorAll("[data-edit-name]").forEach(btn=>{btn.disabled=false;btn.style.pointerEvents="auto";btn.onclick=e=>{e.preventDefault();e.stopPropagation();editMemberName(btn.dataset.editName)}});
+      el.querySelectorAll("[data-view-form]").forEach(btn=>{btn.disabled=false;btn.style.pointerEvents="auto";btn.onclick=e=>{e.preventDefault();e.stopPropagation();lihatFormPendaftaran(btn.dataset.viewForm)}});
+      el.querySelectorAll("[data-delete-member]").forEach(btn=>{btn.disabled=false;btn.style.pointerEvents="auto";btn.onclick=e=>{e.preventDefault();e.stopPropagation();deleteMember(btn.dataset.deleteMember)}});
     };
     const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
     document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
