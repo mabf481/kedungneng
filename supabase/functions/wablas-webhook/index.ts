@@ -337,23 +337,29 @@ Deno.serve(async (req) => {
     });
   }
 
-  await supabase
-    .from("wa_messages")
-    .upsert(
-      {
-        wablas_id:
-          payload.id || null,
-        phone,
-        direction: "inbound",
-        message,
-        message_type: messageType,
-        raw: payload,
-      },
-      {
-        onConflict: "wablas_id",
-        ignoreDuplicates: true,
-      },
-    );
+  // Log inbound in the background so it does not delay the bot response.
+  EdgeRuntime.waitUntil(
+    supabase
+      .from("wa_messages")
+      .upsert(
+        {
+          wablas_id:
+            payload.id || null,
+          phone,
+          direction: "inbound",
+          message,
+          message_type: messageType,
+          raw: payload,
+        },
+        {
+          onConflict: "wablas_id",
+          ignoreDuplicates: true,
+        },
+      )
+      .then(({ error }) => {
+        if (error) console.error("inbound_log_error", error);
+      }),
+  );
 
   const {
     data: allowed,
@@ -413,12 +419,23 @@ Deno.serve(async (req) => {
     .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .trim();
 
-  const { data: waUser } =
-    await supabase
+  const isCekCommand =
+    /^cek\s+simpanan\s+(.+)$/i.test(cleanMessage);
+  const isSWCommand =
+    /^simpanan\s+wajib\s+(.+)$/i.test(cleanMessage);
+
+  // State is only needed for the multi-step payment flow.
+  let waUser: { state?: unknown; data?: unknown } | null = null;
+
+  if (!isCekCommand && !isSWCommand) {
+    const result = await supabase
       .from("wa_users")
       .select("state, data")
       .eq("phone", phone)
       .maybeSingle();
+
+    waUser = result.data;
+  }
 
   const state = String(
     waUser?.state ?? "menu",
@@ -461,19 +478,24 @@ Deno.serve(async (req) => {
       refId,
     );
 
-    await supabase
-      .from("wa_messages")
-      .insert({
-        phone,
-        direction: "outbound",
-        message: reply,
-        message_type: "text",
-        raw: {
-          ref_id: refId,
-          ...meta,
-          wablas: sent,
-        },
-      });
+    EdgeRuntime.waitUntil(
+      supabase
+        .from("wa_messages")
+        .insert({
+          phone,
+          direction: "outbound",
+          message: reply,
+          message_type: "text",
+          raw: {
+            ref_id: refId,
+            ...meta,
+            wablas: sent,
+          },
+        })
+        .then(({ error }) => {
+          if (error) console.error("outbound_log_error", error);
+        }),
+    );
 
     return sent;
   }
@@ -537,7 +559,8 @@ Deno.serve(async (req) => {
       .select(
         "id, no_anggota, nama, tanggal_masuk",
       )
-      .ilike("nama", namaCari);
+      .ilike("nama", namaCari)
+      .limit(2);
 
     if (error) {
       return {
@@ -603,19 +626,13 @@ Deno.serve(async (req) => {
       return new Response(null, { status: 200 });
     }
 
-    const anggota =
-      found.rows[0];
+    const anggota = found.rows[0];
 
-    const {
-      data: wajibRows,
-      error: wajibError,
-    } = await supabase
-      .from("koperasi_simpanan_wajib")
-      .select("jumlah")
-      .eq(
-        "anggota_id",
-        anggota.id,
-      );
+    const { data: wajibRows, error: wajibError } =
+      await supabase
+        .from("koperasi_simpanan_wajib")
+        .select("tahun, bulan, jumlah")
+        .eq("anggota_id", anggota.id);
 
     if (wajibError) {
       return json(
@@ -639,42 +656,22 @@ Deno.serve(async (req) => {
           0,
         );
 
-    const {
-      data: pokokRow,
-    } = await supabase
-      .from("koperasi_anggota")
-      .select("simpanan_pokok")
-      .eq("id", anggota.id)
-      .maybeSingle();
-
     const totalPokok =
       Number(
-        pokokRow?.simpanan_pokok ??
-          0,
+        anggota.simpanan_pokok ?? 0,
       );
 
     const totalSimpanan =
       totalPokok +
       totalWajib;
 
-    const loaded =
-      await loadMember(
-        anggota.id,
-      );
-
-    if (!loaded) {
-      return json(
-        {
-          ok: false,
-          error:
-            "member_data_error",
-        },
-        500,
-      );
-    }
+    const dueMonths = buildDueMonths(
+      anggota.tanggal_masuk,
+      wajibRows ?? [],
+    );
 
     const tunggakan =
-      loaded.dueMonths.filter(
+      dueMonths.filter(
         (x) => x.shortfall > 0,
       );
 
@@ -711,9 +708,10 @@ Deno.serve(async (req) => {
         rupiah(totalTunggakan),
     ].join("\n");
 
-    await saveState(
-      "menu",
-      {},
+    EdgeRuntime.waitUntil(
+      saveState("menu", {}).catch((error) =>
+        console.error("save_state_error", error)
+      ),
     );
 
     await sendAndLog(
