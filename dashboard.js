@@ -28,7 +28,8 @@
     const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
     document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
   }
-  function cetakFormPendaftaran(a){
+  function lihatFormPendaftaran(id){const a=anggota.find(x=>String(x.id)===String(id));if(!a){alert("Data anggota tidak ditemukan.");return}cetakFormPendaftaran(a,false)}
+  function cetakFormPendaftaran(a,autoPrint=true){
     const fmtDate=(v)=>{
       if(!v)return "-";
       const d=new Date(v+"T00:00:00");
@@ -57,7 +58,7 @@
       <div class="statement">Saya menyatakan untuk di daftar sebagai anggota Koperasi Produsen Pertanian Langgeng Lumbung Pangan dengan sukarela dan bersedia memenuhi / mematuhi segala hak dan kewajiban sebagai anggota sebagaimana tersebut dalam Angaran Dasar (AD) dan Anggaran Rumah Tangga (ART) serta ketentuan Koperasi Produsen Pertanian Langgeng Lumbung Pangan.</div>
       <div class="signature"><div class="date">Brebes, ${hariIni}</div><div class="role">Pemohon</div><div class="name">${esc(a.nama)}</div><div>___________________________</div></div>
       <div class="note">Note : Lampirkan foto copy KTP yang masih berlaku</div>
-      <script>window.onload=()=>setTimeout(()=>window.print(),350);window.onafterprint=()=>window.close();</script>
+      <script>window.onload=()=>{if(${autoPrint})setTimeout(()=>window.print(),350)};window.onafterprint=()=>{if(${autoPrint})window.close()};</script>
       </body></html>`;
     const w=window.open("","_blank","width=900,height=1100");
     if(!w){alert("Form pendaftaran sudah dibuat, tetapi browser memblokir jendela cetak. Izinkan pop-up untuk dashboard ini lalu coba simpan lagi.");return}
