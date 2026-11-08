@@ -259,7 +259,7 @@ async function renderDashboard(){
         }).select("id,no_anggota,nama,no_induk_kependudukan,tempat_lahir,tanggal_lahir,jenis_kelamin,alamat,no_hp,tanggal_masuk,simpanan_pokok,simpanan_sukarela,created_at").single();
         if(error)throw error;
         anggota.push(data);anggota.sort((a,b)=>String(a.no_anggota).localeCompare(String(b.no_anggota),undefined,{numeric:true}));
-        panel.hidden=true;form.reset();alert("Anggota berhasil ditambahkan dengan nomor "+noAnggota+".");pageAnggota();
+        panel.hidden=true;form.reset();alert("Anggota berhasil ditambahkan dengan nomor "+noAnggota+"."); cetakFormPendaftaran(data); pageAnggota();
       }catch(err){alert("Gagal menambah anggota: "+(err?.message||String(err)))}finally{btn.disabled=false;btn.textContent="+ Simpan Anggota"}
     };
     const render=list=>{
@@ -271,6 +271,42 @@ async function renderDashboard(){
     const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
     document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
   }
+  function cetakFormPendaftaran(a){
+    const fmtDate=(v)=>{
+      if(!v)return "-";
+      const d=new Date(v+"T00:00:00");
+      return d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+    };
+    const hariIni=fmtDate(new Date().toISOString().slice(0,10));
+    const gender=String(a.jenis_kelamin||"").toUpperCase().startsWith("L")?"Laki - Laki":"Perempuan";
+    const alamat=esc(a.alamat||"-").replace(/\n/g,"<br>");
+    const html=\`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Formulir Pendaftaran - ${esc(a.nama)}</title>
+      <style>
+        @page{size:A4;margin:18mm 18mm 15mm 18mm}*{box-sizing:border-box}body{font-family:"Times New Roman",serif;color:#111;margin:0;font-size:12pt;line-height:1.35}
+        .kop{text-align:center}.kop .title{font-weight:bold;font-size:15pt;letter-spacing:.2px}.kop .name{font-weight:bold;font-size:14pt}.kop .ahu{font-size:11pt;margin-top:2px}.kop .addr{font-size:10.5pt}.line{border-top:1.5px solid #111;margin-top:8px}
+        h1{text-align:center;font-size:14pt;margin:25px 0 25px;font-weight:bold}.data{margin-left:5mm}.row{display:grid;grid-template-columns:47mm 6mm 1fr;margin:5px 0}.label{white-space:nowrap}.value{min-height:18px}.statement{margin-top:26px;text-align:justify}.signature{margin-top:36px;text-align:center;margin-left:55%}.signature .date{margin-bottom:28px}.signature .role{margin-bottom:42px}.signature .name{font-weight:bold;text-decoration:underline}.note{margin-top:38px;font-size:10.5pt}
+        @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+      </style></head><body>
+      <div class="kop"><div class="title">KOPERASI PERTANIAN</div><div class="name">LANGENG LUMBUNG PANGAN KEDUNGNENG</div><div class="ahu">AHU-0005273.AH.01.29.Tahun 2023</div><div class="addr">Jl. Lapangan Bola Andalas, RT 01 RW 03 Desa Kedunngneng</div><div class="addr">Kec. Losari Kab. Brebed Jawa Tengah 52255</div><div class="addr">e-mail : koptanllpkedungneng@gmail.com</div><div class="line"></div></div>
+      <h1>Formulir Pendaftaran Anggota Baru</h1>
+      <div class="data">
+        <div class="row"><div class="label">Nama Lengkap</div><div>:</div><div class="value">${esc(a.nama)}</div></div>
+        <div class="row"><div class="label">Nomor Induk Kependudukan</div><div>:</div><div class="value">${esc(a.no_induk_kependudukan||"-")}</div></div>
+        <div class="row"><div class="label">Tempat, Tanggal Lahir</div><div>:</div><div class="value">${esc(a.tempat_lahir||"-")}, ${fmtDate(a.tanggal_lahir)}</div></div>
+        <div class="row"><div class="label">Jenis Kelamin</div><div>:</div><div class="value">${gender}</div></div>
+        <div class="row"><div class="label">Alamat</div><div>:</div><div class="value">${alamat}</div></div>
+        <div class="row"><div class="label">No HP</div><div>:</div><div class="value">${esc(a.no_hp||"-")}</div></div>
+      </div>
+      <div class="statement">Saya menyatakan untuk di daftar sebagai anggota Koperasi Produsen Pertanian Langgeng Lumbung Pangan dengan sukarela dan bersedia memenuhi / mematuhi segala hak dan kewajiban sebagai anggota sebagaimana tersebut dalam Angaran Dasar (AD) dan Anggaran Rumah Tangga (ART) serta ketentuan Koperasi Produsen Pertanian Langgeng Lumbung Pangan.</div>
+      <div class="signature"><div class="date">Brebes, ${hariIni}</div><div class="role">Pemohon</div><div class="name">${esc(a.nama)}</div><div>___________________________</div></div>
+      <div class="note">Note : Lampirkan foto copy KTP yang masih berlaku</div>
+      <script>window.onload=()=>setTimeout(()=>window.print(),350);window.onafterprint=()=>window.close();</script>
+      </body></html>\`;
+    const w=window.open("","_blank","width=900,height=1100");
+    if(!w){alert("Form pendaftaran sudah dibuat, tetapi browser memblokir jendela cetak. Izinkan pop-up untuk dashboard ini lalu coba simpan lagi.");return}
+    w.document.open();w.document.write(html);w.document.close();
+  }
+
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
     const rows=wajib.filter(w=>String(w.anggota_id)===String(a.id));
