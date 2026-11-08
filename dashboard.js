@@ -58,30 +58,64 @@ async function renderDashboard(){
   const renderAnggotaSearch=()=>{const input=document.getElementById("search");if(!input)return;input.oninput=e=>{const q=e.target.value.toLowerCase();renderAnggotaRows(anggota.filter(a=>String(a.no_anggota).toLowerCase().includes(q)||String(a.nama).toLowerCase().includes(q)))}};
   async function editMemberName(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
-    const nama=prompt("Nama Lengkap:",a.nama||"");if(nama===null)return;
-    const nik=prompt("NIK (16 digit):",a.no_induk_kependudukan||"");if(nik===null)return;
-    const tempat=prompt("Tempat Lahir:",a.tempat_lahir||"");if(tempat===null)return;
-    const tanggal=prompt("Tanggal Lahir (YYYY-MM-DD):",a.tanggal_lahir||"");if(tanggal===null)return;
-    const gender=prompt("Jenis Kelamin (L/P):",a.jenis_kelamin||"");if(gender===null)return;
-    const alamat=prompt("Alamat:",a.alamat||"");if(alamat===null)return;
-    const hp=prompt("No HP:",a.no_hp||"");if(hp===null)return;
-    const masuk=prompt("Tanggal Masuk (YYYY-MM-DD):",a.tanggal_masuk||"");if(masuk===null)return;
-    const pokok=prompt("Simpanan Pokok:",String(a.simpanan_pokok??0));if(pokok===null)return;
-    const sukarela=prompt("Simpanan Sukarela:",String(a.simpanan_sukarela??0));if(sukarela===null)return;
-    const cleanNama=nama.replace(/\s+/g," ").trim(),cleanNik=nik.replace(/\D/g,""),cleanGender=gender.trim().toUpperCase().startsWith("P")?"P":"L";
-    const cleanPokok=Number(String(pokok).replace(/[^0-9.-]/g,"")),cleanSukarela=Number(String(sukarela).replace(/[^0-9.-]/g,""));
-    if(cleanNama.length<2||cleanNama.length>100){alert("Nama harus 2-100 karakter.");return}
-    if(cleanNik.length!==16){alert("NIK harus tepat 16 digit.");return}
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)||!/^\d{4}-\d{2}-\d{2}$/.test(masuk)){alert("Tanggal harus berformat YYYY-MM-DD.");return}
-    if(!Number.isFinite(cleanPokok)||cleanPokok<0||!Number.isFinite(cleanSukarela)||cleanSukarela<0){alert("Nilai simpanan tidak valid.");return}
-    try{
-      const {error}=await supabase.from("koperasi_anggota").update({nama:cleanNama,no_induk_kependudukan:cleanNik,tempat_lahir:tempat.trim(),tanggal_lahir:tanggal,jenis_kelamin:cleanGender,alamat:alamat.trim(),no_hp:hp.trim(),tanggal_masuk:masuk,simpanan_pokok:cleanPokok,simpanan_sukarela:cleanSukarela}).eq("id",a.id);
-      if(error)throw error;
-      Object.assign(a,{nama:cleanNama,no_induk_kependudukan:cleanNik,tempat_lahir:tempat.trim(),tanggal_lahir:tanggal,jenis_kelamin:cleanGender,alamat:alamat.trim(),no_hp:hp.trim(),tanggal_masuk:masuk,simpanan_pokok:cleanPokok,simpanan_sukarela:cleanSukarela});
-      alert("Seluruh data anggota berhasil diperbarui.");
-      pageAnggota();
-    }catch(err){alert("Gagal memperbarui data: "+(err?.message||String(err)))}
-  };
+    const old=document.getElementById("editMemberPanel");if(old)old.remove();
+    const panel=document.createElement("section");
+    panel.id="editMemberPanel";
+    panel.className="card add-member-panel";
+    panel.innerHTML=`
+      <div class="section-head"><div><p class="eyebrow">Edit Data Anggota</p><h2>Edit Anggota</h2><p class="muted">Nomor anggota tidak dapat diubah.</p></div><button type="button" id="cancelEditMember" class="detail-btn">Tutup</button></div>
+      <form id="editMemberForm" class="transaction-form">
+        <div class="form-grid">
+          <label>Nomor Anggota<input value="${esc(a.no_anggota||"")}" readonly></label>
+          <label>Nama Lengkap<input id="editNama" type="text" maxlength="100" value="${esc(a.nama||"")}" required></label>
+          <label>No Induk Kependudukan<input id="editNik" type="text" inputmode="numeric" maxlength="16" value="${esc(a.no_induk_kependudukan||"")}" required><small>Harus 16 digit.</small></label>
+          <label>Tempat, Tanggal Lahir<div class="birth-grid"><input id="editTempatLahir" type="text" maxlength="80" value="${esc(a.tempat_lahir||"")}" required><input id="editTanggalLahir" type="date" value="${esc(a.tanggal_lahir||"")}" required></div></label>
+          <label>Jenis Kelamin<select id="editGender" required><option value="L" ${a.jenis_kelamin==="L"?"selected":""}>Laki-laki</option><option value="P" ${a.jenis_kelamin==="P"?"selected":""}>Perempuan</option></select></label>
+          <label class="full">Alamat<textarea id="editAlamat" maxlength="300" required>${esc(a.alamat||"")}</textarea></label>
+          <label>No HP<input id="editNoHp" type="tel" maxlength="20" value="${esc(a.no_hp||"")}" required></label>
+          <label>Tanggal Masuk<input id="editTanggalMasuk" type="date" value="${esc(a.tanggal_masuk||"")}" required></label>
+          <label>Simpanan Pokok<input id="editPokok" type="number" min="0" step="1" value="${Number(a.simpanan_pokok||0)}" required></label>
+          <label>Simpanan Sukarela<input id="editSukarela" type="number" min="0" step="1" value="${Number(a.simpanan_sukarela||0)}" required></label>
+        </div>
+        <div class="transaction-actions"><button type="submit" class="detail-btn primary">Simpan Perubahan</button><button type="button" id="resetEditMember" class="detail-btn">↻ Kembalikan</button></div>
+      </form>`;
+    const anggotaPage=document.querySelector(".anggota-head")?.parentElement;
+    if(anggotaPage)anggotaPage.insertBefore(panel,anggotaPage.children[1]||null);else content.prepend(panel);
+    const form=document.getElementById("editMemberForm");
+    const close=()=>panel.remove();
+    document.getElementById("cancelEditMember").onclick=close;
+    document.getElementById("resetEditMember").onclick=()=>editMemberName(id);
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      const btn=form.querySelector("button[type=submit]");btn.disabled=true;btn.textContent="Menyimpan...";
+      try{
+        const nama=document.getElementById("editNama").value.replace(/\\s+/g," ").trim();
+        const nik=document.getElementById("editNik").value.replace(/\\D/g,"");
+        const tempat=document.getElementById("editTempatLahir").value.replace(/\\s+/g," ").trim();
+        const tanggal=document.getElementById("editTanggalLahir").value;
+        const gender=document.getElementById("editGender").value;
+        const alamat=document.getElementById("editAlamat").value.trim();
+        const hp=document.getElementById("editNoHp").value.trim();
+        const masuk=document.getElementById("editTanggalMasuk").value;
+        const pokok=Number(document.getElementById("editPokok").value||0);
+        const sukarela=Number(document.getElementById("editSukarela").value||0);
+        if(nama.length<2||nama.length>100)throw new Error("Nama harus 2-100 karakter.");
+        if(nik.length!==16)throw new Error("NIK harus tepat 16 digit.");
+        if(!tanggal||!masuk)throw new Error("Tanggal lahir dan tanggal masuk wajib diisi.");
+        if(!tempat||!alamat||!hp)throw new Error("Semua data anggota wajib diisi.");
+        if(!Number.isFinite(pokok)||pokok<0||!Number.isFinite(sukarela)||sukarela<0)throw new Error("Nilai simpanan tidak valid.");
+        const {error}=await supabase.from("koperasi_anggota").update({nama,no_induk_kependudukan:nik,tempat_lahir:tempat,tanggal_lahir:tanggal,jenis_kelamin:gender,alamat,no_hp:hp,tanggal_masuk:masuk,simpanan_pokok:pokok,simpanan_sukarela:sukarela}).eq("id",a.id);
+        if(error)throw error;
+        Object.assign(a,{nama,no_induk_kependudukan:nik,tempat_lahir:tempat,tanggal_lahir:tanggal,jenis_kelamin:gender,alamat,no_hp:hp,tanggal_masuk:masuk,simpanan_pokok:pokok,simpanan_sukarela:sukarela});
+        alert("Seluruh data anggota berhasil diperbarui.");
+        panel.remove();
+        pageAnggota();
+      }catch(err){
+        alert("Gagal memperbarui data: "+(err?.message||String(err)));
+        btn.disabled=false;btn.textContent="Simpan Perubahan";
+      }
+    };
+  }
   async function deleteMember(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
     const ok=confirm("Hapus anggota "+(a.nama||"-")+" ("+(a.no_anggota||"-")+")?\n\nData anggota akan dihapus dan tindakan ini tidak dapat dibatalkan.");
