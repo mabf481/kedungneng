@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-5";
+    const templateUrl="/daftar.pdf?v=20261109-6";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -341,31 +341,17 @@ async function renderDashboard(){
       if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-"){
         throw new Error("File daftar.pdf bukan PDF yang valid. Server mengembalikan "+(contentType||"data tanpa Content-Type")+".");
       }
-      // Hapus NIK bawaan dari template secara permanen sebelum mengisi data anggota.
-      // Template memakai raster/image, jadi redaction dilakukan dengan MuPDF.
-      let cleanBytes=bytes;
-      try{
-        const mupdf=await import("https://esm.sh/mupdf@1.28.1");
-        const doc=mupdf.Document.openDocument(bytes,"application/pdf");
-        const pdfDoc=doc.asPDF();
-        const p=pdfDoc.loadPage(0);
-        const redact=p.createAnnotation("Redact");
-        redact.setRect([245,214,395,241]);
-        redact.update();
-        p.applyRedactions();
-        cleanBytes=pdfDoc.saveToBuffer("").asUint8Array();
-        p.destroy();
-        doc.destroy();
-      }catch(redactErr){
-        console.error("[Formulir PDF] Gagal melakukan redaction NIK:",redactErr);
-        throw new Error("Gagal menghapus NIK bawaan template: "+(redactErr?.message||String(redactErr)));
-      }
+      // Hapus seluruh NIK dari formulir. Template asli menyimpan NIK sebagai gambar,
+      // jadi area NIK ditutup putih pada hasil PDF. Tidak ada NIK anggota yang dicetak.
+      const cleanBytes=bytes;
       const pdf=await PDFDocument.load(cleanBytes);
       const page=pdf.getPages()[0];
       const width=page.getWidth(),height=page.getHeight();
       const font=await pdf.embedFont(StandardFonts.Helvetica);
       const fontSize=13;
       const white=rgb(1,1,1);
+      // Area NIK bawaan pada template (koordinat PDF).
+      page.drawRectangle({x:245,y:600,width:155,height:38,color:white});
       const cover=(x,y,w,h)=>page.drawRectangle({x,y,width:w,height:h,color:white});
       const text=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:rgb(0,0,0)});
       const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
