@@ -6,3 +6,5 @@
 .transaction-form-card{min-width:0;overflow:hidden}.transaction-form{min-width:0}.form-grid{min-width:0}.form-grid>label{min-width:0}.form-grid input,.form-grid select,.form-grid textarea{min-width:0;max-width:100%}
 #txNo{max-width:210px}.form-grid label:has(#txAmount){max-width:230px}#txAmount{max-width:230px}.form-grid label.full{min-width:0}#txNote{max-width:100%;min-height:70px}
 @media(max-width:900px){#txNo,#txAmount{max-width:100%}}
+
+.add-member-panel{border:1px solid #dce9ea;background:linear-gradient(180deg,#fbffff,#fff)}.add-member-panel .section-head{align-items:flex-start}.add-member-panel .section-head>button{width:auto;margin:0;padding:9px 14px;background:#eef2f7;color:#334155}.birth-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.birth-grid input{margin-top:0}.add-member-panel textarea{min-height:92px}.add-member-panel[hidden]{display:none}@media(max-width:560px){.birth-grid{grid-template-columns:1fr}.add-member-panel .section-head{align-items:stretch}.add-member-panel .section-head>button{width:100%}}
