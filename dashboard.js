@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-6";
+    const templateUrl="/daftar.pdf?v=20261109-7";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -352,6 +352,9 @@ async function renderDashboard(){
       const white=rgb(1,1,1);
       // Area NIK bawaan pada template (koordinat PDF).
       page.drawRectangle({x:245,y:600,width:155,height:38,color:white});
+      // NIK sejajar dengan teks "Nomor Induk Kependudukan" pada template.
+      const nikTextY=height-(241*72/96)-13;
+      text(nik,256,nikTextY,13);
       const cover=(x,y,w,h)=>page.drawRectangle({x,y,width:w,height:h,color:white});
       const text=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:rgb(0,0,0)});
       const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
