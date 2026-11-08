@@ -57,6 +57,7 @@ async function renderDashboard(){
   const renderAnggotaRows=list=>{const el=document.getElementById("rows");if(!el)return;el.innerHTML=list.map(a=>`<tr><td><b>${esc(a.no_anggota)}</b></td><td>${esc(a.nama)}</td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td>${rupiah(a.simpanan_pokok)}</td><td><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button> <button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></td></tr>`).join("")||'<tr><td colspan="6" class="empty">Tidak ditemukan.</td></tr>';el.querySelectorAll("[data-edit-name]").forEach(btn=>btn.onclick=()=>editMemberName(btn.dataset.editName));el.querySelectorAll("[data-delete-member]").forEach(btn=>btn.onclick=()=>deleteMember(btn.dataset.deleteMember))};
   const renderAnggotaSearch=()=>{const input=document.getElementById("search");if(!input)return;input.oninput=e=>{const q=e.target.value.toLowerCase();renderAnggotaRows(anggota.filter(a=>String(a.no_anggota).toLowerCase().includes(q)||String(a.nama).toLowerCase().includes(q)))}};
   async function editMemberName(id){
+    window.scrollTo({top:0,behavior:"instant"});
     const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
     const old=document.getElementById("editMemberPanel");if(old)old.remove();
     const panel=document.createElement("section");
