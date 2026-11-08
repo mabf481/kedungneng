@@ -1,6 +1,11 @@
 name: Fix registration PDF
 
 on:
+  push:
+    paths:
+      - daftar.pdf
+      - scripts/fix_daftar_pdf.py
+      - .github/workflows/fix-daftar-pdf.yml
   workflow_dispatch:
 
 jobs:
