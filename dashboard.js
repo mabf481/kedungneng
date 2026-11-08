@@ -337,7 +337,7 @@ async function renderDashboard(){
     const hariIni=fmtDate(new Date().toISOString().slice(0,10));
     const gender=String(a.jenis_kelamin||"").toUpperCase().startsWith("L")?"Laki - Laki":"Perempuan";
     const alamat=esc(a.alamat||"-").replace(/\n/g,"<br>");
-    const html=\`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Formulir Pendaftaran - ${esc(a.nama)}</title>
+    const html=`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Formulir Pendaftaran - ${esc(a.nama)}</title>
       <style>
         @page{size:A4;margin:18mm 18mm 15mm 18mm}*{box-sizing:border-box}body{font-family:"Times New Roman",serif;color:#111;margin:0;font-size:12pt;line-height:1.35}
         .kop{text-align:center}.kop .title{font-weight:bold;font-size:15pt;letter-spacing:.2px}.kop .name{font-weight:bold;font-size:14pt}.kop .ahu{font-size:11pt;margin-top:2px}.kop .addr{font-size:10.5pt}.line{border-top:1.5px solid #111;margin-top:8px}
@@ -357,12 +357,12 @@ async function renderDashboard(){
       <div class="statement">Saya menyatakan untuk di daftar sebagai anggota Koperasi Produsen Pertanian Langgeng Lumbung Pangan dengan sukarela dan bersedia memenuhi / mematuhi segala hak dan kewajiban sebagai anggota sebagaimana tersebut dalam Angaran Dasar (AD) dan Anggaran Rumah Tangga (ART) serta ketentuan Koperasi Produsen Pertanian Langgeng Lumbung Pangan.</div>
       <div class="signature"><div class="date">Brebes, ${hariIni}</div><div class="role">Pemohon</div><div class="name">${esc(a.nama)}</div><div>___________________________</div></div>
       <div class="note">Note : Lampirkan foto copy KTP yang masih berlaku</div>
-      </body></html>\`;
+      </body></html>`;
     let modal=document.getElementById("formPendaftaranModal");
     if(modal)modal.remove();
     modal=document.createElement("div");
     modal.id="formPendaftaranModal";
-    modal.innerHTML=\`
+    modal.innerHTML=`
       <div class="form-modal-backdrop">
         <div class="form-modal-card" role="dialog" aria-modal="true" aria-label="Formulir Pendaftaran">
           <div class="form-modal-head">
@@ -372,11 +372,11 @@ async function renderDashboard(){
           <div class="form-modal-body"><iframe title="Formulir Pendaftaran" class="form-modal-frame"></iframe></div>
           <div class="form-modal-actions"><button type="button" class="detail-btn" data-modal-close>Tutup</button><button type="button" class="detail-btn primary" data-modal-print>🖨 Cetak</button></div>
         </div>
-      </div>\`;
+      </div>`;
     document.body.appendChild(modal);
     const styleId="formPendaftaranModalStyle";
     if(!document.getElementById(styleId)){
-      const style=document.createElement("style");style.id=styleId;style.textContent=\`
+      const style=document.createElement("style");style.id=styleId;style.textContent=`
         .form-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99999}
         .form-modal-card{width:min(960px,96vw);height:min(92vh,900px);background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
         .form-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e5e7eb;background:#fff}
@@ -385,7 +385,7 @@ async function renderDashboard(){
         .form-modal-body{flex:1;min-height:0;background:#e5e7eb;padding:14px}.form-modal-frame{width:100%;height:100%;border:1px solid #d1d5db;background:#fff;border-radius:8px}
         .form-modal-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #e5e7eb;background:#fff}
         @media(max-width:700px){.form-modal-backdrop{padding:8px}.form-modal-card{width:100%;height:96vh;border-radius:12px}.form-modal-body{padding:6px}.form-modal-head{padding:12px 14px}.form-modal-actions{padding:10px 14px}}
-      \`;document.head.appendChild(style);
+      `;document.head.appendChild(style);
     }
     const frame=modal.querySelector(".form-modal-frame");
     const close=()=>modal.remove();
