@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-10";
+    const templateUrl="/daftar.pdf?v=20261109-11";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -364,7 +364,7 @@ async function renderDashboard(){
       const name=String(a.nama||"-");
       const nik=String(a.no_induk_kependudukan||"-");
       // NIK sejajar dengan teks "Nomor Induk Kependudukan" pada template.
-      const nikTextY=602;
+      const nikTextY=622;
       text(nik,256,nikTextY,13);
       cover(252,620,310,32);text(name,256,639,13);
       cover(252,573,310,32);text(birth,256,582,13);
