@@ -58,21 +58,29 @@ async function renderDashboard(){
   const renderAnggotaSearch=()=>{const input=document.getElementById("search");if(!input)return;input.oninput=e=>{const q=e.target.value.toLowerCase();renderAnggotaRows(anggota.filter(a=>String(a.no_anggota).toLowerCase().includes(q)||String(a.nama).toLowerCase().includes(q)))}};
   async function editMemberName(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
-    const namaBaru=prompt("Edit nama anggota:",a.nama||"");
-    if(namaBaru===null)return;
-    const nama=namaBaru.replace(/\s+/g," ").trim();
-    if(nama.length<2||nama.length>100){alert("Nama harus 2-100 karakter.");return}
-    if(nama===String(a.nama||"").trim())return;
+    const nama=prompt("Nama Lengkap:",a.nama||"");if(nama===null)return;
+    const nik=prompt("NIK (16 digit):",a.no_induk_kependudukan||"");if(nik===null)return;
+    const tempat=prompt("Tempat Lahir:",a.tempat_lahir||"");if(tempat===null)return;
+    const tanggal=prompt("Tanggal Lahir (YYYY-MM-DD):",a.tanggal_lahir||"");if(tanggal===null)return;
+    const gender=prompt("Jenis Kelamin (L/P):",a.jenis_kelamin||"");if(gender===null)return;
+    const alamat=prompt("Alamat:",a.alamat||"");if(alamat===null)return;
+    const hp=prompt("No HP:",a.no_hp||"");if(hp===null)return;
+    const masuk=prompt("Tanggal Masuk (YYYY-MM-DD):",a.tanggal_masuk||"");if(masuk===null)return;
+    const pokok=prompt("Simpanan Pokok:",String(a.simpanan_pokok??0));if(pokok===null)return;
+    const sukarela=prompt("Simpanan Sukarela:",String(a.simpanan_sukarela??0));if(sukarela===null)return;
+    const cleanNama=nama.replace(/\s+/g," ").trim(),cleanNik=nik.replace(/\D/g,""),cleanGender=gender.trim().toUpperCase().startsWith("P")?"P":"L";
+    const cleanPokok=Number(String(pokok).replace(/[^0-9.-]/g,"")),cleanSukarela=Number(String(sukarela).replace(/[^0-9.-]/g,""));
+    if(cleanNama.length<2||cleanNama.length>100){alert("Nama harus 2-100 karakter.");return}
+    if(cleanNik.length!==16){alert("NIK harus tepat 16 digit.");return}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)||!/^\d{4}-\d{2}-\d{2}$/.test(masuk)){alert("Tanggal harus berformat YYYY-MM-DD.");return}
+    if(!Number.isFinite(cleanPokok)||cleanPokok<0||!Number.isFinite(cleanSukarela)||cleanSukarela<0){alert("Nilai simpanan tidak valid.");return}
     try{
-      const {error}=await supabase.from("koperasi_anggota").update({nama}).eq("id",a.id);
+      const {error}=await supabase.from("koperasi_anggota").update({nama:cleanNama,no_induk_kependudukan:cleanNik,tempat_lahir:tempat.trim(),tanggal_lahir:tanggal,jenis_kelamin:cleanGender,alamat:alamat.trim(),no_hp:hp.trim(),tanggal_masuk:masuk,simpanan_pokok:cleanPokok,simpanan_sukarela:cleanSukarela}).eq("id",a.id);
       if(error)throw error;
-      a.nama=nama;
-      setStatus(a.no_anggota+" • "+a.nama);
-      const activeSearch=document.getElementById("search");
-      if(activeSearch)renderAnggotaRows(anggota.filter(x=>String(x.no_anggota).toLowerCase().includes(activeSearch.value.toLowerCase())||String(x.nama).toLowerCase().includes(activeSearch.value.toLowerCase())));
-      alert("Nama anggota berhasil diubah.");
-      if(document.getElementById("backAnggota"))pageAnggotaDetail(a.id);
-    }catch(err){alert("Gagal mengubah nama: "+(err?.message||String(err)))}
+      Object.assign(a,{nama:cleanNama,no_induk_kependudukan:cleanNik,tempat_lahir:tempat.trim(),tanggal_lahir:tanggal,jenis_kelamin:cleanGender,alamat:alamat.trim(),no_hp:hp.trim(),tanggal_masuk:masuk,simpanan_pokok:cleanPokok,simpanan_sukarela:cleanSukarela});
+      alert("Seluruh data anggota berhasil diperbarui.");
+      pageAnggota();
+    }catch(err){alert("Gagal memperbarui data: "+(err?.message||String(err)))}
   };
   async function deleteMember(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
@@ -277,9 +285,9 @@ async function renderDashboard(){
     };
     const render=list=>{
       const el=document.getElementById("rows");
-      el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit Nama</button></div></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
-      el.querySelectorAll("[data-member]").forEach(btn=>btn.onclick=()=>pageAnggotaDetail(btn.dataset.member));
+      el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button><button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></div></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
       el.querySelectorAll("[data-edit-name]").forEach(btn=>btn.onclick=()=>editMemberName(btn.dataset.editName));
+      el.querySelectorAll("[data-delete-member]").forEach(btn=>btn.onclick=()=>deleteMember(btn.dataset.deleteMember));
     };
     const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
     document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
