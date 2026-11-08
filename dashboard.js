@@ -357,7 +357,7 @@ async function renderDashboard(){
       const hp=String(a.no_hp||"-");
       const name=String(a.nama||"-");
       const nik=String(a.no_induk_kependudukan||"-");
-      cover(252,620,310,32);text(name,256,628,13);
+      cover(252,620,310,32);text(name,256,639,13);
       cover(252,596,310,32);text(nik,256,605,13);
       cover(252,573,310,32);text(birth,256,582,13);
       cover(252,550,310,32);text(gender,256,559,13);
