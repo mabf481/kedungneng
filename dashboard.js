@@ -331,14 +331,14 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="./daftar-koperasi.pdf?v=20261109-1";
+    const templateUrl="./daftar.pdf?v=20261109-2";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
-      if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar-koperasi.pdf ada di root repository.");
+      if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
       const contentType=(response.headers.get("content-type")||"").toLowerCase();
       const bytes=new Uint8Array(await response.arrayBuffer());
       if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-"){
-        throw new Error("File daftar-koperasi.pdf bukan PDF yang valid. Server mengembalikan "+(contentType||"data tanpa Content-Type")+".");
+        throw new Error("File daftar.pdf bukan PDF yang valid. Server mengembalikan "+(contentType||"data tanpa Content-Type")+".");
       }
       const pdf=await PDFDocument.load(bytes);
       const page=pdf.getPages()[0];
