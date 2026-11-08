@@ -47,7 +47,7 @@ async function renderDashboard(){
     .on("postgres_changes",{event:"*",schema:"public",table:"wa_allowed_numbers"},refreshFromRealtime)
     .on("postgres_changes",{event:"*",schema:"public",table:"koperasi_admin"},refreshFromRealtime)
     .subscribe();
-  const [aRes,wRes,sRes,waRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,jenis_kelamin,tanggal_masuk,simpanan_pokok,simpanan_sukarela").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at,sumber_transaksi").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA")]);
+  const [aRes,wRes,sRes,waRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,no_induk_kependudukan,tempat_lahir,tanggal_lahir,jenis_kelamin,alamat,no_hp,tanggal_masuk,simpanan_pokok,simpanan_sukarela,created_at").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at,sumber_transaksi").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA")]);
   if(aRes.error)throw aRes.error;if(wRes.error)throw wRes.error;if(sRes.error)throw sRes.error;if(waRes.error)throw waRes.error;
   const anggota=aRes.data||[],wajib=wRes.data||[],sukarela=sRes.data||[],waAllowed=waRes.data||[],byId=new Map(anggota.map(a=>[a.id,a]));
   const totalPokok=anggota.reduce((s,a)=>s+Number(a.simpanan_pokok||0),0),totalSukarela=sukarela.reduce((s,a)=>s+Number(a.jumlah||0),0),totalWajib=wajib.reduce((s,a)=>s+Number(a.jumlah||0),0);
@@ -198,10 +198,28 @@ async function renderDashboard(){
     const laki=anggota.filter(a=>String(a.jenis_kelamin||"").toLowerCase().startsWith("l")).length;
     const perempuan=anggota.filter(a=>String(a.jenis_kelamin||"").toLowerCase().startsWith("p")).length;
     const totalPokokAnggota=anggota.reduce((s,a)=>s+Number(a.simpanan_pokok||0),0);
+    const nextNoAnggota=()=>{
+      const nums=anggota.map(a=>{const m=String(a.no_anggota||"").match(/(\d+)$/);return m?Number(m[1]):0}).filter(Number.isFinite);
+      return "LLP "+String(Math.max(0,...nums)+1).padStart(4,"0");
+    };
     content.innerHTML=`
       <section class="dashboard-head anggota-head">
         <div><h2>Data Anggota</h2><p>Kelola data anggota dan lihat ringkasan simpanan dengan cepat.</p></div>
-        <div class="period-tools"><div class="period"><span>♙</span> Total ${anggota.length.toLocaleString("id-ID")} anggota</div></div>
+        <div class="period-tools"><div class="period"><span>♙</span> Total ${anggota.length.toLocaleString("id-ID")} anggota</div><button id="showAddMember" type="button" class="apply-btn">+ Tambah Anggota</button></div>
+      </section>
+      <section id="addMemberPanel" class="card add-member-panel" hidden>
+        <div class="section-head"><div><p class="eyebrow">Data Anggota Baru</p><h2>Tambah Anggota</h2><p class="muted">Nomor anggota dibuat otomatis.</p></div><button id="cancelAddMember" type="button" class="detail-btn">Tutup</button></div>
+        <form id="addMemberForm" class="transaction-form">
+          <div class="form-grid">
+            <label>Nama Lengkap<input id="memberNama" type="text" maxlength="100" placeholder="Nama lengkap" required></label>
+            <label>No Induk Kependudukan<input id="memberNik" type="text" inputmode="numeric" maxlength="16" minlength="16" placeholder="16 digit NIK" required><small>Harus 16 digit.</small></label>
+            <label>Tempat, Tanggal Lahir<div class="birth-grid"><input id="memberTempatLahir" type="text" maxlength="80" placeholder="Tempat lahir" required><input id="memberTanggalLahir" type="date" required></div></label>
+            <label>Jenis Kelamin<select id="memberGender" required><option value="">Pilih jenis kelamin...</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></label>
+            <label class="full">Alamat<textarea id="memberAlamat" maxlength="300" placeholder="Alamat lengkap" required></textarea></label>
+            <label>No HP<input id="memberNoHp" type="tel" maxlength="20" inputmode="tel" placeholder="08xxxxxxxxxx" required></label>
+          </div>
+          <div class="transaction-actions"><button type="submit" class="detail-btn primary">+ Simpan Anggota</button><button type="button" id="resetAddMember" class="detail-btn">↻ Reset</button></div>
+        </form>
       </section>
       <section class="stats anggota-stats">
         <article class="stat-card modern"><div class="stat-icon">♙</div><div><span>Total Anggota</span><strong>${anggota.length.toLocaleString("id-ID")}</strong><small class="trend up">↑ <em>terdaftar</em></small></div></article>
@@ -216,24 +234,42 @@ async function renderDashboard(){
         </div>
         <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>L/P</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div>
       </section>`;
+    const panel=document.getElementById("addMemberPanel"),form=document.getElementById("addMemberForm");
+    document.getElementById("showAddMember").onclick=()=>{panel.hidden=false;document.getElementById("memberNama").focus()};
+    document.getElementById("cancelAddMember").onclick=()=>{panel.hidden=true;form.reset()};
+    document.getElementById("resetAddMember").onclick=()=>form.reset();
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;btn.textContent="Menyimpan...";
+      try{
+        const nama=document.getElementById("memberNama").value.replace(/\s+/g," ").trim();
+        const nik=document.getElementById("memberNik").value.replace(/\D/g,"");
+        const tempatLahir=document.getElementById("memberTempatLahir").value.replace(/\s+/g," ").trim();
+        const tanggalLahir=document.getElementById("memberTanggalLahir").value;
+        const jenisKelamin=document.getElementById("memberGender").value;
+        const alamat=document.getElementById("memberAlamat").value.trim();
+        const noHp=document.getElementById("memberNoHp").value.trim();
+        if(nama.length<2||nama.length>100)throw new Error("Nama lengkap harus 2-100 karakter.");
+        if(nik.length!==16)throw new Error("NIK harus tepat 16 digit.");
+        if(!tempatLahir||!tanggalLahir||!jenisKelamin||!alamat||!noHp)throw new Error("Semua isian wajib diisi.");
+        const noAnggota=nextNoAnggota();
+        const {data,error}=await supabase.from("koperasi_anggota").insert({
+          no_anggota:noAnggota,nama,no_induk_kependudukan:nik,tempat_lahir:tempatLahir,tanggal_lahir: tanggalLahir,
+          jenis_kelamin:jenisKelamin,alamat,no_hp:noHp,tanggal_masuk:new Date().toISOString().slice(0,10),simpanan_pokok:0,simpanan_sukarela:0
+        }).select("id,no_anggota,nama,no_induk_kependudukan,tempat_lahir,tanggal_lahir,jenis_kelamin,alamat,no_hp,tanggal_masuk,simpanan_pokok,simpanan_sukarela,created_at").single();
+        if(error)throw error;
+        anggota.push(data);anggota.sort((a,b)=>String(a.no_anggota).localeCompare(String(b.no_anggota),undefined,{numeric:true}));
+        panel.hidden=true;form.reset();alert("Anggota berhasil ditambahkan dengan nomor "+noAnggota+".");pageAnggota();
+      }catch(err){alert("Gagal menambah anggota: "+(err?.message||String(err)))}finally{btn.disabled=false;btn.textContent="+ Simpan Anggota"}
+    };
     const render=list=>{
       const el=document.getElementById("rows");
-      el.innerHTML=list.map(a=>{
-        const pokok=Number(a.simpanan_pokok||0);
-        const status=pokok>=100000?"LUNAS":"BELUM LUNAS";
-        return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit Nama</button></div></td></tr>`;
-      }).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
+      el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-member="${esc(a.id)}">Detail</button><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit Nama</button></div></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
       el.querySelectorAll("[data-member]").forEach(btn=>btn.onclick=()=>pageAnggotaDetail(btn.dataset.member));
       el.querySelectorAll("[data-edit-name]").forEach(btn=>btn.onclick=()=>editMemberName(btn.dataset.editName));
     };
-    const apply=()=>{
-      const q=String(document.getElementById("search").value||"").toLowerCase();
-      const gender=document.getElementById("genderFilter").value;
-      render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))));
-    };
-    document.getElementById("search").oninput=apply;
-    document.getElementById("genderFilter").onchange=apply;
-    render(anggota);
+    const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
+    document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
   }
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
@@ -249,7 +285,7 @@ async function renderDashboard(){
       const yearTotal=yearRows.reduce((s,w)=>s+Number(w.jumlah||0),0);
       return`<section class="card"><div class="section-head"><div><p class="eyebrow">Simpanan Wajib</p><h3>${year}</h3></div><strong>${rupiah(yearTotal)}</strong></div><div class="table-wrap"><table><thead><tr><th>Bulan</th><th>Jumlah</th></tr></thead><tbody>${yearRows.map(w=>`<tr><td>${monthName(w.bulan)}</td><td><b>${rupiah(w.jumlah)}</b></td></tr>`).join("")||'<tr><td colspan="2" class="empty">Belum ada transaksi.</td></tr>'}</tbody></table></div></section>`
     }).join("");
-    content.innerHTML=`<section class="card"><div class="section-head"><div><p class="eyebrow">Profil Anggota</p><h2>${esc(a.nama)}</h2><p class="muted">No. Anggota: <b>${esc(a.no_anggota)}</b></p></div><div><button id="editNameDetail" type="button" class="detail-btn">Edit Nama</button> <button id="backAnggota" type="button" class="detail-btn">← Kembali</button></div></div><div class="table-wrap"><table><tbody><tr><th style="width:220px">Tanggal Bergabung</th><td>${dateId(a.tanggal_masuk)}</td></tr><tr><th>Jenis Kelamin</th><td>${esc(a.jenis_kelamin||"-")}</td></tr></tbody></table></div></section><section class="stats"><article class="stat-card"><span>Simpanan Pokok</span><strong>${rupiah(pokok)}</strong></article><article class="stat-card"><span>Simpanan Wajib</span><strong>${rupiah(totalW)}</strong></article><article class="stat-card"><span>Simpanan Sukarela</span><strong>${rupiah(sukarelaTotal)}</strong></article><article class="stat-card"><span>Jumlah Simpanan Pokok</span><strong>${rupiah(total)}</strong></article></section>${yearBlocks||'<section class="card"><p class="empty">Belum ada rincian simpanan wajib.</p></section>'}<section class="card"><div class="section-head"><div><p class="eyebrow">Setoran Simpanan Wajib</p><h3>Tambah Setoran Bulanan</h3></div><strong>Rp10.000 / bulan</strong></div><form id="wajibForm" style="display:grid;grid-template-columns:150px 150px 1fr auto;gap:10px;align-items:end;margin-bottom:16px"><label>Tahun<select id="wTahun" required>${[...new Set([...years,defaultYear])].sort((x,y)=>y-x).map(y=>`<option value="${y}" ${Number(y)===defaultYear?"selected":""}>${y}</option>`).join("")}</select></label><label>Bulan<select id="wBulan" required>${["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m,i)=>`<option value="${i+1}" ${i+1===defaultMonth?"selected":""}>${m}</option>`).join("")}</select></label><label>Jumlah Setoran<input id="wJumlah" type="number" min="1" step="1000" value="10000" required></label><button type="submit" class="detail-btn">+ Simpan</button></form><p class="muted">Jika bulan tersebut sudah memiliki setoran, setoran baru akan ditambahkan ke saldo bulan itu.</p></section><section class="card"><div class="section-head"><div><p class="eyebrow">Simpanan Sukarela</p><h3>Riwayat Transaksi</h3></div><strong>${rupiah(sukarelaTotal)}</strong></div><form id="sukarelaForm" style="display:grid;grid-template-columns:160px 1fr 2fr auto;gap:10px;align-items:end;margin-bottom:16px"><label>Tanggal<input id="sTanggal" type="date" value="${new Date().toISOString().slice(0,10)}" required></label><label>Jumlah<input id="sJumlah" type="number" min="0" step="1000" placeholder="10000" required></label><label>Keterangan<input id="sKet" type="text" placeholder="Setoran sukarela"></label><button type="submit" class="detail-btn">+ Simpan</button></form><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Jumlah</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody>${sRows.map(s=>`<tr><td>${dateId(s.tanggal)}</td><td><b>${rupiah(s.jumlah)}</b></td><td>${esc(s.keterangan||"-")}</td><td><button type="button" class="detail-btn" data-delete-sukarela="${esc(s.id)}">Hapus</button></td></tr>`).join("")||'<tr><td colspan="4" class="empty">Belum ada transaksi simpanan sukarela.</td></tr>'}</tbody></table></div></section>`;
+    content.innerHTML=`<section class="card"><div class="section-head"><div><p class="eyebrow">Profil Anggota</p><h2>${esc(a.nama)}</h2><p class="muted">No. Anggota: <b>${esc(a.no_anggota)}</b></p></div><div><button id="editNameDetail" type="button" class="detail-btn">Edit Nama</button> <button id="backAnggota" type="button" class="detail-btn">← Kembali</button></div></div><div class="table-wrap"><table><tbody><tr><th style="width:220px">No. Anggota</th><td>${esc(a.no_anggota)}</td></tr><tr><th>No. Induk Kependudukan</th><td>${esc(a.no_induk_kependudukan||"-")}</td></tr><tr><th>Tempat, Tanggal Lahir</th><td>${esc(a.tempat_lahir||"-")}, ${dateId(a.tanggal_lahir)}</td></tr><tr><th>Jenis Kelamin</th><td>${esc(a.jenis_kelamin||"-")}</td></tr><tr><th>Alamat</th><td>${esc(a.alamat||"-")}</td></tr><tr><th>No HP</th><td>${esc(a.no_hp||"-")}</td></tr><tr><th>Tanggal Bergabung</th><td>${dateId(a.tanggal_masuk)}</td></tr></tbody></table></div></section><section class="stats"><article class="stat-card"><span>Simpanan Pokok</span><strong>${rupiah(pokok)}</strong></article><article class="stat-card"><span>Simpanan Wajib</span><strong>${rupiah(totalW)}</strong></article><article class="stat-card"><span>Simpanan Sukarela</span><strong>${rupiah(sukarelaTotal)}</strong></article><article class="stat-card"><span>Jumlah Simpanan Pokok</span><strong>${rupiah(total)}</strong></article></section>${yearBlocks||'<section class="card"><p class="empty">Belum ada rincian simpanan wajib.</p></section>'}<section class="card"><div class="section-head"><div><p class="eyebrow">Setoran Simpanan Wajib</p><h3>Tambah Setoran Bulanan</h3></div><strong>Rp10.000 / bulan</strong></div><form id="wajibForm" style="display:grid;grid-template-columns:150px 150px 1fr auto;gap:10px;align-items:end;margin-bottom:16px"><label>Tahun<select id="wTahun" required>${[...new Set([...years,defaultYear])].sort((x,y)=>y-x).map(y=>`<option value="${y}" ${Number(y)===defaultYear?"selected":""}>${y}</option>`).join("")}</select></label><label>Bulan<select id="wBulan" required>${["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m,i)=>`<option value="${i+1}" ${i+1===defaultMonth?"selected":""}>${m}</option>`).join("")}</select></label><label>Jumlah Setoran<input id="wJumlah" type="number" min="1" step="1000" value="10000" required></label><button type="submit" class="detail-btn">+ Simpan</button></form><p class="muted">Jika bulan tersebut sudah memiliki setoran, setoran baru akan ditambahkan ke saldo bulan itu.</p></section><section class="card"><div class="section-head"><div><p class="eyebrow">Simpanan Sukarela</p><h3>Riwayat Transaksi</h3></div><strong>${rupiah(sukarelaTotal)}</strong></div><form id="sukarelaForm" style="display:grid;grid-template-columns:160px 1fr 2fr auto;gap:10px;align-items:end;margin-bottom:16px"><label>Tanggal<input id="sTanggal" type="date" value="${new Date().toISOString().slice(0,10)}" required></label><label>Jumlah<input id="sJumlah" type="number" min="0" step="1000" placeholder="10000" required></label><label>Keterangan<input id="sKet" type="text" placeholder="Setoran sukarela"></label><button type="submit" class="detail-btn">+ Simpan</button></form><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Jumlah</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody>${sRows.map(s=>`<tr><td>${dateId(s.tanggal)}</td><td><b>${rupiah(s.jumlah)}</b></td><td>${esc(s.keterangan||"-")}</td><td><button type="button" class="detail-btn" data-delete-sukarela="${esc(s.id)}">Hapus</button></td></tr>`).join("")||'<tr><td colspan="4" class="empty">Belum ada transaksi simpanan sukarela.</td></tr>'}</tbody></table></div></section>`;
     document.getElementById("backAnggota").onclick=pageAnggota;
     document.getElementById("editNameDetail").onclick=()=>editMemberName(a.id);
     document.getElementById("wajibForm").onsubmit=async e=>{
