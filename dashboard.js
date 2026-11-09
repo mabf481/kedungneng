@@ -316,7 +316,7 @@ async function renderDashboard(){
         }).select("id,no_anggota,nama,no_induk_kependudukan,tempat_lahir,tanggal_lahir,jenis_kelamin,alamat,no_hp,tanggal_masuk,simpanan_pokok,simpanan_sukarela,created_at").single();
         if(error)throw error;
         anggota.push(data);anggota.sort((a,b)=>String(a.no_anggota).localeCompare(String(b.no_anggota),undefined,{numeric:true}));
-        panel.hidden=true;form.reset();alert("Anggota berhasil ditambahkan dengan nomor "+noAnggota+"."); cetakFormPendaftaran(data); pageAnggota();
+        panel.hidden=true;form.reset();alert("Anggota berhasil ditambahkan dengan nomor "+noAnggota+"."); pageAnggota();
       }catch(err){alert("Gagal menambah anggota: "+(err?.message||String(err)))}finally{btn.disabled=false;btn.textContent="+ Simpan Anggota"}
     };
     const render=list=>{
