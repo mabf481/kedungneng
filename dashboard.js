@@ -262,8 +262,8 @@ async function renderDashboard(){
     if(!a)throw new Error("Data anggota tidak ditemukan.");
     const pageW=595.28,pageH=841.89,margin=48;
     const objects=[];
-    const escPdf=v=>String(v??"").replace(/\\/g,"\\\\").replace(/\\(/g,"\\(").replace(/\\)/g,"\\)");
-    const clean=v=>String(v??"-").normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^\\x20-\\x7E]/g,"?");
+    const escPdf=v=>String(v??"").replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
+    const clean=v=>String(v??"-").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^\x20-\x7E]/g,"?");
     const addObj=s=>{objects.push(s);return objects.length;};
     const fontObj=addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
     const boldFontObj=addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
