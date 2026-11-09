@@ -111,3 +111,23 @@
 .wa-access-table td:nth-child(2){max-width:240px;overflow:hidden;text-overflow:ellipsis}
 .wa-access-table .table-actions{display:flex!important;flex-wrap:nowrap!important;gap:5px;white-space:nowrap}
 .wa-access-table .table-actions .detail-btn{white-space:nowrap;flex:none}
+
+/* Popup Edit Akses Bot WhatsApp */
+.wa-edit-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.wa-edit-modal.show{display:flex}
+.wa-edit-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.48);backdrop-filter:blur(2px)}
+.wa-edit-dialog{position:relative;width:min(460px,100%);background:#fff;border:1px solid #e5eaf0;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.22);overflow:hidden;animation:waEditIn .18s ease-out}
+.wa-edit-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:18px 20px;border-bottom:1px solid #edf1f5}
+.wa-edit-head h3{margin:2px 0 0;font-size:20px;color:#172033}
+.wa-edit-close{width:34px;height:34px;margin:0;padding:0;border:0;border-radius:9px;background:#f3f5f7;color:#64748b;font-size:24px;line-height:1;cursor:pointer}
+.wa-edit-close:hover{background:#e9eef3;color:#172033}
+.wa-edit-form{display:grid;gap:14px;padding:20px}
+.wa-edit-form label{display:grid;gap:7px;color:#344054;font-size:13px;font-weight:700}
+.wa-edit-form input{width:100%;box-sizing:border-box;margin:0;padding:12px 13px;border:1px solid #d8dee9;border-radius:10px;background:#fff;color:#172033;font-size:14px;outline:none}
+.wa-edit-form input:focus{border-color:#18a5a8;box-shadow:0 0 0 3px rgba(24,165,168,.12)}
+.wa-edit-form small{color:#7b8797;font-size:11px;font-weight:500}
+.wa-edit-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
+.wa-edit-actions .detail-btn{margin:0}
+body.modal-open{overflow:hidden}
+@keyframes waEditIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:560px){.wa-edit-modal{padding:12px}.wa-edit-dialog{border-radius:15px}.wa-edit-head{padding:16px}.wa-edit-form{padding:16px}.wa-edit-actions{display:grid;grid-template-columns:1fr 1fr}.wa-edit-actions .detail-btn{width:100%}}
