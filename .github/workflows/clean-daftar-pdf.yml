@@ -15,28 +15,30 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install PyMuPDF
         run: python -m pip install pymupdf
-      - name: Remove all old member sample data
+      - name: Make PDF template contain no text
         run: |
           python - <<'PY'
           import fitz
+
           doc = fitz.open("daftar.pdf")
-          samples = [
-              "3329120811030003",
-              "Warmoto",
-              "Brebes, 8 November 2003",
-              "Laki - Laki",
-              "RT 02 RW 03 Desa Kedungneng Kec. Losari",
-              "083174206382",
-              "Brebes, 9 November 202",
-          ]
+
           for page in doc:
-              for sample in samples:
-                  for rect in page.search_for(sample):
-                      page.add_redact_annot(rect, fill=(1,1,1))
-              page.add_redact_annot(fitz.Rect(35, 175, 560, 370), fill=(1,1,1))
+              # Remove every text object from the template.
+              for block in page.get_text("blocks"):
+                  rect = fitz.Rect(block[:4])
+                  if not rect.is_empty:
+                      page.add_redact_annot(rect, fill=(1, 1, 1))
               page.apply_redactions()
+
           doc.save("daftar.cleaned.pdf", garbage=4, deflate=True)
           doc.close()
+
+          # Verify that the template contains no extractable text.
+          check = fitz.open("daftar.cleaned.pdf")
+          remaining = "\n".join(page.get_text() for page in check).strip()
+          check.close()
+          if remaining:
+              raise SystemExit("Template still contains text after cleanup.")
           PY
           mv daftar.cleaned.pdf daftar.pdf
       - name: Commit cleaned template
@@ -45,5 +47,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add daftar.pdf
           git diff --cached --quiet && exit 0
-          git commit -m "Remove all member sample data from registration PDF"
+          git commit -m "Make registration PDF template text-free"
           git push
