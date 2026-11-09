@@ -330,59 +330,16 @@ async function renderDashboard(){
   }
   function lihatFormPendaftaran(id){const a=anggota.find(x=>String(x.id)===String(id));if(!a){alert("Data anggota tidak ditemukan.");return}cetakFormPendaftaran(a,false)}
   async function cetakFormPendaftaran(a,autoPrint=true){
-    if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
-    const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-24";
+    // Formulir hanya membuka template PDF apa adanya.
+    // Tidak ada proses pembuatan, pengisian, atau penambahan text oleh dashboard.
+    const templateUrl="/daftar.pdf?v=20261109-25";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+").");
       const bytes=new Uint8Array(await response.arrayBuffer());
       if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-")throw new Error("daftar.pdf bukan PDF yang valid.");
 
-      const pdf=await PDFDocument.load(bytes);
-      const page=pdf.getPages()[0];
-      const font=await pdf.embedFont(StandardFonts.Helvetica);
-      const fontSize=14;
-      const black=rgb(0,0,0);
-
-      // SISTEM BARU:
-      // Seluruh area field pada template dianggap kosong.
-      // Label, tanda ":" dan nilai anggota semuanya digambar otomatis oleh sistem.
-      // Tidak ada lagi ketergantungan pada teks contoh Budiman Suharto di PDF.
-      const draw=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:black});
-      const fmtDate=v=>{if(!v)return"-";const d=new Date(v+"T00:00:00");return Number.isNaN(d.getTime())?"-":d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})};
-      const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
-
-      const name=String(a.nama||"-");
-      const nik=String(a.no_induk_kependudukan||"-");
-      const birth=a.tanggal_lahir?String(a.tempat_lahir||"-")+", "+fmtDate(a.tanggal_lahir):String(a.tempat_lahir||"-");
-      const gender=String(a.jenis_kelamin||"").toUpperCase()==="P"?"Perempuan":"Laki - Laki";
-      const alamat=String(a.alamat||"-").replace(/\\r?\\n/g," ").replace(/\\s+/g," ").trim();
-      const hp=String(a.no_hp||"-");
-      const today=fmtDate(new Date().toISOString().slice(0,10));
-
-      // Posisi mengikuti koordinat asli template A4 (595.5 x 842.25 pt).
-      const rows=[
-        ["Nama Lengkap",name,51.6,628.18],
-        ["Nomor Induk Kependudukan",nik,51.6,604.92],
-        ["Tempat, Tanggal Lahir",birth,51.6,581.66],
-        ["Jenis Kelamin",gender,51.6,558.40]
-      ];
-      rows.forEach(([label,value,x,y])=>{draw(label,x,y);draw(":",249.65,y);draw(value,260,y)});
-
-      draw("Alamat",51.6,535.15);draw(":",249.65,535.15);
-      const addressLines=wrap(alamat,47).slice(0,2);
-      addressLines.forEach((line,i)=>draw(line,260,535.15-i*23));
-
-      draw("No HP",51.6,488.63);draw(":",249.65,488.63);draw(hp,260,488.63);
-
-      // Bagian tanggal dan pemohon juga dibuat otomatis.
-      draw("Brebes, "+today,363.04,305.26);
-      draw("Pemohon",422.37,285.75);
-      draw(name,373.21,177);
-
-      const out=await pdf.save();
-      const blob=new Blob([out],{type:"application/pdf"});
+      const blob=new Blob([bytes],{type:"application/pdf"});
       const url=URL.createObjectURL(blob);
       const old=document.getElementById("formPdfModal");if(old)old.remove();
       const modal=document.createElement("div");modal.id="formPdfModal";
@@ -399,6 +356,7 @@ async function renderDashboard(){
       alert("Gagal membuka formulir PDF: "+(err?.message||String(err)));
     }
   }
+
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
     const rows=wajib.filter(w=>String(w.anggota_id)===String(a.id));
