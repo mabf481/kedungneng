@@ -332,60 +332,57 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-21";
+    const templateUrl="/daftar.pdf?v=20261109-22";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
-      if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
-      const contentType=(response.headers.get("content-type")||"").toLowerCase();
+      if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+").");
       const bytes=new Uint8Array(await response.arrayBuffer());
-      if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-"){
-        throw new Error("File daftar.pdf bukan PDF yang valid. Server mengembalikan "+(contentType||"data tanpa Content-Type")+".");
-      }
+      if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-")throw new Error("daftar.pdf bukan PDF yang valid.");
 
       const pdf=await PDFDocument.load(bytes);
       const page=pdf.getPages()[0];
       const font=await pdf.embedFont(StandardFonts.Helvetica);
       const fontSize=14;
+      const black=rgb(0,0,0);
       const white=rgb(1,1,1);
 
-      // Template yang dipakai website berukuran Letter 612 x 792 pt.
-      // Area data contoh dibersihkan dahulu, lalu data anggota ditulis kembali
-      // sejajar dengan label pada template.
-      const cover=(x,y,w,h)=>page.drawRectangle({x,y,width:w,height:h,color:white});
-      const text=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:rgb(0,0,0)});
-      const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
+      // SISTEM BARU:
+      // Seluruh area field pada template dianggap kosong.
+      // Label, tanda ":" dan nilai anggota semuanya digambar otomatis oleh sistem.
+      // Tidak ada lagi ketergantungan pada teks contoh Budiman Suharto di PDF.
+      page.drawRectangle({x:42,y:465,width:528,height:190,color:white});
+
+      const draw=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:black});
       const fmtDate=v=>{if(!v)return"-";const d=new Date(v+"T00:00:00");return Number.isNaN(d.getTime())?"-":d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})};
-      const today=fmtDate(new Date().toISOString().slice(0,10));
+      const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
+
+      const name=String(a.nama||"-");
+      const nik=String(a.no_induk_kependudukan||"-");
       const birth=a.tanggal_lahir?String(a.tempat_lahir||"-")+", "+fmtDate(a.tanggal_lahir):String(a.tempat_lahir||"-");
       const gender=String(a.jenis_kelamin||"").toUpperCase()==="P"?"Perempuan":"Laki - Laki";
       const alamat=String(a.alamat||"-").replace(/\\r?\\n/g," ").replace(/\\s+/g," ").trim();
       const hp=String(a.no_hp||"-");
-      const name=String(a.nama||"-");
-      const nik=String(a.no_induk_kependudukan||"-");
+      const today=fmtDate(new Date().toISOString().slice(0,10));
 
-      // Bersihkan hanya area nilai, tanpa menutup label di sebelah kiri.
-      // Posisi disesuaikan dengan hasil render template Letter 612 x 792 pt.
-      cover(248,596,315,35); // Nama + sisa data contoh di baris nama
-      cover(248,580,315,30); // NIK
-      cover(248,558,315,42); // Tempat/tanggal lahir, termasuk data contoh lama
-      cover(248,535,315,34); // Jenis kelamin
-      cover(248,490,315,55); // Alamat
-      cover(248,460,315,34); // No HP
-      cover(350,495,220,42); // Tanggal pemohon yang berada di area data
-      cover(385,150,165,45); // Nama pemohon
+      // Posisi mengikuti koordinat asli template A4 (595.5 x 842.25 pt).
+      const rows=[
+        ["Nama Lengkap",name,51.6,628.18],
+        ["Nomor Induk Kependudukan",nik,51.6,604.92],
+        ["Tempat, Tanggal Lahir",birth,51.6,581.66],
+        ["Jenis Kelamin",gender,51.6,558.40]
+      ];
+      rows.forEach(([label,value,x,y])=>{draw(label,x,y);draw(":",249.65,y);draw(value,260,y)});
 
-      // Tulis ulang data pada garis yang sama dengan label.
-      text(name,256,640,14);
-      text(nik,256,622,14);
-      text(birth,256.765,584,14);
-      text(gender,256,570,14);
-
+      draw("Alamat",51.6,535.15);draw(":",249.65,535.15);
       const addressLines=wrap(alamat,47).slice(0,2);
-      addressLines.forEach((line,i)=>text(line,256,547-i*23,14));
+      addressLines.forEach((line,i)=>draw(line,260,535.15-i*23));
 
-      text(hp,256,500,14);
-      text("Brebes, "+today,363,517,14);
-      text(name,396,177,14);
+      draw("No HP",51.6,488.63);draw(":",249.65,488.63);draw(hp,260,488.63);
+
+      // Bagian tanggal dan pemohon juga dibuat otomatis.
+      draw("Brebes, "+today,363.04,305.26);
+      draw("Pemohon",422.37,285.75);
+      draw(name,373.21,177);
 
       const out=await pdf.save();
       const blob=new Blob([out],{type:"application/pdf"});
