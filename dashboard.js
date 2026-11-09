@@ -344,14 +344,11 @@ async function renderDashboard(){
       const font=await pdf.embedFont(StandardFonts.Helvetica);
       const fontSize=14;
       const black=rgb(0,0,0);
-      const white=rgb(1,1,1);
 
       // SISTEM BARU:
       // Seluruh area field pada template dianggap kosong.
       // Label, tanda ":" dan nilai anggota semuanya digambar otomatis oleh sistem.
       // Tidak ada lagi ketergantungan pada teks contoh Budiman Suharto di PDF.
-      page.drawRectangle({x:42,y:470,width:528,height:185,color:white});
-
       const draw=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:black});
       const fmtDate=v=>{if(!v)return"-";const d=new Date(v+"T00:00:00");return Number.isNaN(d.getTime())?"-":d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})};
       const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
