@@ -94,3 +94,12 @@
 .member-result-empty{padding:14px 12px;color:#7b8797;font-size:13px;text-align:center}
 .member-value{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;margin:0!important;padding:0!important;border:0!important}
 @media(max-width:560px){.member-results{max-height:240px}.member-result-item{align-items:flex-start;flex-direction:column;gap:3px}.member-result-number{font-size:11px}}
+
+/* Tombol Kategori Transaksi */
+.category-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+.category-btn{width:100%;margin:0;padding:11px 10px;border:1px solid #d8dee9;background:#fff;color:#526071;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.category-btn.active{border-color:#18a5a8;color:#138f93;background:#f0fbfb;box-shadow:0 0 0 1px rgba(24,165,168,.08)}
+.category-btn:hover{border-color:#18a5a8;background:#f7ffff}
+.category-btn.category-out{grid-column:1/-1}
+.category-value{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;margin:0!important;padding:0!important;border:0!important}
+@media(max-width:560px){.category-buttons{grid-template-columns:1fr}.category-btn.category-out{grid-column:auto}}
