@@ -36,3 +36,43 @@
 .anggota-list-card .table-actions .detail-btn{padding:7px 9px;font-size:11px}
 @media(max-width:900px){.anggota-list-card table{min-width:1260px}}
 @media(max-width:560px){.anggota-list-card .table-wrap{margin:0 -2px}.anggota-list-card table{min-width:1260px}}
+
+/* Daftar Anggota: responsif tanpa geser horizontal */
+.anggota-list-card .table-wrap{overflow-x:hidden;overflow-y:visible}
+.anggota-list-card table{width:100%;min-width:0;table-layout:fixed}
+.anggota-list-card table th,.anggota-list-card table td{padding:9px 7px;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.anggota-list-card table th:nth-child(1),.anggota-list-card table td:nth-child(1){width:9%}
+.anggota-list-card table th:nth-child(2),.anggota-list-card table td:nth-child(2){width:13%}
+.anggota-list-card table th:nth-child(3),.anggota-list-card table td:nth-child(3){width:13%}
+.anggota-list-card table th:nth-child(4),.anggota-list-card table td:nth-child(4){width:14%}
+.anggota-list-card table th:nth-child(5),.anggota-list-card table td:nth-child(5){width:6%;text-align:center}
+.anggota-list-card table th:nth-child(6),.anggota-list-card table td:nth-child(6){width:20%}
+.anggota-list-card table th:nth-child(7),.anggota-list-card table td:nth-child(7){width:11%}
+.anggota-list-card table th:nth-child(8),.anggota-list-card table td:nth-child(8){width:14%}
+.anggota-list-card table td:nth-child(7){white-space:normal}
+.anggota-list-card .table-actions{flex-wrap:wrap;gap:4px}
+.anggota-list-card .table-actions .detail-btn{padding:6px 7px;font-size:10px}
+#rows td:last-child{min-width:0!important}
+@media(max-width:900px){
+  .anggota-list-card table{font-size:11px}
+  .anggota-list-card table th,.anggota-list-card table td{padding:8px 5px}
+}
+@media(max-width:700px){
+  .anggota-list-card .table-wrap{overflow:visible}
+  .anggota-list-card table,.anggota-list-card table tbody,.anggota-list-card table tr,.anggota-list-card table td{display:block;width:100%}
+  .anggota-list-card table thead{display:none}
+  .anggota-list-card table tr{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;padding:10px 0;border-bottom:1px solid #edf0f5}
+  .anggota-list-card table td{border:0;padding:5px 0;min-width:0!important}
+  .anggota-list-card table td::before{display:block;color:#7a8493;font-size:9px;font-weight:700;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em}
+  .anggota-list-card table td:nth-child(1)::before{content:"No. Anggota"}
+  .anggota-list-card table td:nth-child(2)::before{content:"Nama"}
+  .anggota-list-card table td:nth-child(3)::before{content:"NIK"}
+  .anggota-list-card table td:nth-child(4)::before{content:"Tempat, Tgl Lahir"}
+  .anggota-list-card table td:nth-child(5)::before{content:"L/P"}
+  .anggota-list-card table td:nth-child(6)::before{content:"Alamat"}
+  .anggota-list-card table td:nth-child(7)::before{content:"No HP"}
+  .anggota-list-card table td:nth-child(8)::before{content:"Aksi"}
+  .anggota-list-card table td:nth-child(6),.anggota-list-card table td:nth-child(8){grid-column:1/-1}
+  .anggota-list-card .table-actions{display:flex!important;flex-direction:row!important;flex-wrap:wrap;gap:5px}
+  .anggota-list-card .table-actions .detail-btn{width:auto!important;min-width:max-content!important;font-size:10px;padding:7px 9px}
+}
