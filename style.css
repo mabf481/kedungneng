@@ -13,3 +13,26 @@
 .table-actions{display:flex!important;gap:6px;flex-direction:row!important;flex-wrap:wrap;align-items:center}
 .table-actions .detail-btn{display:inline-flex!important;visibility:visible!important;opacity:1!important;width:auto!important;min-width:max-content!important;white-space:nowrap!important}
 #rows td:last-child{min-width:280px!important}
+
+
+/* Tabel Daftar Anggota: tetap lengkap tetapi lebih ringkas */
+.anggota-list-card .table-wrap{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch}
+.anggota-list-card table{table-layout:fixed;min-width:1260px}
+.anggota-list-card table th,.anggota-list-card table td{padding:10px 8px;overflow:hidden;text-overflow:ellipsis}
+.anggota-list-card table th:nth-child(1),.anggota-list-card table td:nth-child(1){width:88px}
+.anggota-list-card table th:nth-child(2),.anggota-list-card table td:nth-child(2){width:130px}
+.anggota-list-card table th:nth-child(3),.anggota-list-card table td:nth-child(3){width:125px}
+.anggota-list-card table th:nth-child(4),.anggota-list-card table td:nth-child(4){width:145px}
+.anggota-list-card table th:nth-child(5),.anggota-list-card table td:nth-child(5){width:48px;text-align:center}
+.anggota-list-card table th:nth-child(6),.anggota-list-card table td:nth-child(6){width:98px}
+.anggota-list-card table th:nth-child(7),.anggota-list-card table td:nth-child(7){width:185px}
+.anggota-list-card table th:nth-child(8),.anggota-list-card table td:nth-child(8){width:112px}
+.anggota-list-card table th:nth-child(9),.anggota-list-card table td:nth-child(9){width:112px}
+.anggota-list-card table th:nth-child(10),.anggota-list-card table td:nth-child(10){width:92px;text-align:center}
+.anggota-list-card table th:nth-child(11),.anggota-list-card table td:nth-child(11){width:225px}
+.anggota-list-card table td:nth-child(7){white-space:nowrap}
+.anggota-list-card table td:nth-child(11){overflow:visible;text-overflow:clip}
+.anggota-list-card .table-actions{flex-wrap:nowrap;gap:5px}
+.anggota-list-card .table-actions .detail-btn{padding:7px 9px;font-size:11px}
+@media(max-width:900px){.anggota-list-card table{min-width:1260px}}
+@media(max-width:560px){.anggota-list-card .table-wrap{margin:0 -2px}.anggota-list-card table{min-width:1260px}}
