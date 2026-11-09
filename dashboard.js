@@ -321,42 +321,13 @@ async function renderDashboard(){
     };
     const render=list=>{
       const el=document.getElementById("rows");
-      el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button><button type="button" class="detail-btn" data-view-form="${esc(a.id)}">Lihat Formulir</button><button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></div></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
+      el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button><button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></div></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
       el.querySelectorAll("button").forEach(btn=>{btn.disabled=false;btn.style.pointerEvents="auto";btn.removeAttribute("onclick")});
       el.onclick=e=>{const btn=e.target.closest("button");if(!btn||!el.contains(btn))return;e.preventDefault();e.stopPropagation();if(btn.dataset.editName)return editMemberName(btn.dataset.editName);if(btn.dataset.viewForm)return lihatFormPendaftaran(btn.dataset.viewForm);if(btn.dataset.deleteMember)return deleteMember(btn.dataset.deleteMember)};
     };
     const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
     document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
   }
-  function lihatFormPendaftaran(id){const a=anggota.find(x=>String(x.id)===String(id));if(!a){alert("Data anggota tidak ditemukan.");return}cetakFormPendaftaran(a,false)}
-  async function cetakFormPendaftaran(a,autoPrint=true){
-    // Formulir hanya membuka template PDF apa adanya.
-    // Tidak ada proses pembuatan, pengisian, atau penambahan text oleh dashboard.
-    const templateUrl="/daftar.pdf?v=20261109-25";
-    try{
-      const response=await fetch(templateUrl,{cache:"no-store"});
-      if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+").");
-      const bytes=new Uint8Array(await response.arrayBuffer());
-      if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-")throw new Error("daftar.pdf bukan PDF yang valid.");
-
-      const blob=new Blob([bytes],{type:"application/pdf"});
-      const url=URL.createObjectURL(blob);
-      const old=document.getElementById("formPdfModal");if(old)old.remove();
-      const modal=document.createElement("div");modal.id="formPdfModal";
-      modal.style.cssText="position:fixed;inset:0;background:rgba(15,23,42,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box";
-      modal.innerHTML='<div style="width:min(1100px,96vw);height:min(94vh,900px);background:#fff;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.35)"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #e5e7eb;gap:8px"><b>Formulir Pendaftaran Anggota</b><div style="display:flex;gap:8px"><button type="button" id="printFormPdf" class="detail-btn primary">Cetak</button><button type="button" id="closeFormPdf" class="detail-btn">Tutup</button></div></div><iframe id="formPdfFrame" title="Formulir Pendaftaran Anggota" style="border:0;width:100%;height:100%;background:#f3f4f6"></iframe></div>';
-      document.body.appendChild(modal);
-      const frame=document.getElementById("formPdfFrame");frame.src=url;
-      document.getElementById("closeFormPdf").onclick=()=>{URL.revokeObjectURL(url);modal.remove()};
-      document.getElementById("printFormPdf").onclick=()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(e){window.open(url,"_blank")}};
-      modal.addEventListener("click",e=>{if(e.target===modal)document.getElementById("closeFormPdf").click()});
-      if(autoPrint)setTimeout(()=>{try{frame.contentWindow.focus();frame.contentWindow.print()}catch(e){}},900);
-    }catch(err){
-      console.error("[Formulir PDF]",err);
-      alert("Gagal membuka formulir PDF: "+(err?.message||String(err)));
-    }
-  }
-
   function pageAnggotaDetail(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a){pageAnggota();return}
     const rows=wajib.filter(w=>String(w.anggota_id)===String(a.id));
@@ -493,3 +464,4 @@ async function renderDashboard(){
   openMenu(getMenuFromPath(),false);
  }catch(error){console.error("[Kedungneng Dashboard]",error);showError("Dashboard gagal dimuat: "+(error?.message||String(error)));}}
 window.addEventListener("error",e=>showError("Aplikasi gagal dimuat: "+(e.message||"kesalahan JavaScript")));renderDashboard();
+
