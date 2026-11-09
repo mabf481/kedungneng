@@ -260,7 +260,14 @@ async function renderDashboard(){
   }
   async function buatFormulirPendaftaranPDF(a){
     if(!a)throw new Error("Data anggota tidak ditemukan.");
-    if(!window.PDFLib){await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";s.onload=resolve;s.onerror=()=>reject(new Error("Library PDF gagal dimuat."));document.head.appendChild(s)});}
+    if(!window.PDFLib){
+      await new Promise((resolve,reject)=>{
+        const existing=document.querySelector("script[data-pdf-lib]");
+        if(existing){existing.addEventListener("load",resolve,{once:true});existing.addEventListener("error",()=>reject(new Error("Library PDF gagal dimuat.")),{once:true});return;}
+        const s=document.createElement("script");s.src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js";s.async=false;s.dataset.pdfLib="1";s.onload=resolve;s.onerror=()=>reject(new Error("Library PDF gagal dimuat dari CDN."));document.head.appendChild(s);
+      });
+    }
+    if(!window.PDFLib)throw new Error("PDF-Lib belum termuat. Silakan coba lagi.");
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;const pdf=await PDFDocument.create();const page=pdf.addPage([595.28,841.89]);const font=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);const margin=48;
     const line=y=>page.drawLine({start:{x:margin,y},end:{x:595.28-margin,y},thickness:1,color:rgb(.75,.75,.75)});const text=(v,x,y,size=10,o={})=>page.drawText(String(v??"-"),{x,y,size,font:o.bold?bold:font,color:rgb(0,0,0),maxWidth:o.maxWidth});
     page.drawText("LLP KEDUNGNENG",{x:margin,y:790,size:16,font:bold});page.drawText("FORMULIR PENDAFTARAN ANGGOTA",{x:margin,y:766,size:13,font:bold});page.drawText("Formulir dibuat otomatis dari Dashboard LLP Kedungneng",{x:margin,y:748,size:9,font});line(732);
