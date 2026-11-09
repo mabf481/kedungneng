@@ -76,3 +76,21 @@
   .anggota-list-card .table-actions{display:flex!important;flex-direction:row!important;flex-wrap:wrap;gap:5px}
   .anggota-list-card .table-actions .detail-btn{width:auto!important;min-width:max-content!important;font-size:10px;padding:7px 9px}
 }
+
+
+/* Pencarian anggota pada transaksi */
+.member-picker{position:relative;margin-top:7px}
+.member-search-wrap{position:relative;display:flex;align-items:center}
+.member-search-wrap input{margin-top:0;padding:12px 42px 12px 38px;border:1px solid #d8dee9;border-radius:12px;background:#fff;transition:border-color .2s,box-shadow .2s}
+.member-search-wrap input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(24,165,168,.12)}
+.member-search-icon{position:absolute;left:14px;z-index:2;color:#7b8797;font-size:20px;line-height:1;pointer-events:none}
+.member-clear{position:absolute;right:7px;z-index:2;width:30px;height:30px;margin:0;padding:0;border-radius:8px;background:transparent;color:#7b8797;font-size:20px;line-height:1}
+.member-clear:hover{background:#f1f5f9;color:#172033}
+.member-results{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;max-height:280px;overflow:auto;background:#fff;border:1px solid #dfe6ee;border-radius:12px;box-shadow:0 16px 35px rgba(20,40,80,.14);padding:6px}
+.member-result-item{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;margin:0;padding:10px 12px;border-radius:9px;background:#fff;color:#172033;text-align:left;font-weight:600}
+.member-result-item:hover{background:#f2f8f8}
+.member-result-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.member-result-number{flex:0 0 auto;color:#718096;font-size:12px;font-weight:600}
+.member-result-empty{padding:14px 12px;color:#7b8797;font-size:13px;text-align:center}
+.member-value{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;margin:0!important;padding:0!important;border:0!important}
+@media(max-width:560px){.member-results{max-height:240px}.member-result-item{align-items:flex-start;flex-direction:column;gap:3px}.member-result-number{font-size:11px}}
