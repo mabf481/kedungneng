@@ -47,9 +47,9 @@ async function renderDashboard(){
     .on("postgres_changes",{event:"*",schema:"public",table:"wa_allowed_numbers"},refreshFromRealtime)
     .on("postgres_changes",{event:"*",schema:"public",table:"koperasi_admin"},refreshFromRealtime)
     .subscribe();
-  const [aRes,wRes,sRes,waRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,no_induk_kependudukan,tempat_lahir,tanggal_lahir,jenis_kelamin,alamat,no_hp,tanggal_masuk,simpanan_pokok,simpanan_sukarela,created_at").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at,sumber_transaksi").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA")]);
-  if(aRes.error)throw aRes.error;if(wRes.error)throw wRes.error;if(sRes.error)throw sRes.error;if(waRes.error)throw waRes.error;
-  const anggota=aRes.data||[],wajib=wRes.data||[],sukarela=sRes.data||[],waAllowed=waRes.data||[],byId=new Map(anggota.map(a=>[a.id,a]));
+  const [aRes,wRes,sRes,waRes,txRes]=await Promise.all([timeout(supabase.from("koperasi_anggota").select("id,no_anggota,nama,no_induk_kependudukan,tempat_lahir,tanggal_lahir,jenis_kelamin,alamat,no_hp,tanggal_masuk,simpanan_pokok,simpanan_sukarela,created_at").order("no_anggota"),15000,"Pengambilan anggota"),timeout(supabase.from("koperasi_simpanan_wajib").select("id,anggota_id,tahun,bulan,jumlah,created_at,sumber_transaksi").order("tahun",{ascending:false}).order("bulan",{ascending:false}),15000,"Pengambilan simpanan wajib"),timeout(supabase.from("koperasi_simpanan_sukarela").select("id,anggota_id,tanggal,jumlah,keterangan").order("tanggal",{ascending:false}),15000,"Pengambilan simpanan sukarela"),timeout(supabase.from("wa_allowed_numbers").select("id,phone,name,active,created_at").order("created_at",{ascending:false}),15000,"Pengambilan akses bot WA"),timeout(supabase.from("koperasi_transaksi").select("id,no_transaksi,tanggal,anggota_id,kategori,arah,jumlah,metode_pembayaran,nomor_referensi,keterangan,sumber_transaksi,created_at").order("created_at",{ascending:false}),15000,"Pengambilan transaksi")]);
+  if(aRes.error)throw aRes.error;if(wRes.error)throw wRes.error;if(sRes.error)throw sRes.error;if(waRes.error)throw waRes.error;if(txRes.error)throw txRes.error;
+  const anggota=aRes.data||[],wajib=wRes.data||[],sukarela=sRes.data||[],waAllowed=waRes.data||[],transactions=txRes.data||[],byId=new Map(anggota.map(a=>[a.id,a]));
   const totalPokok=anggota.reduce((s,a)=>s+Number(a.simpanan_pokok||0),0),totalSukarela=sukarela.reduce((s,a)=>s+Number(a.jumlah||0),0),totalWajib=wajib.reduce((s,a)=>s+Number(a.jumlah||0),0);
   const setStatus=t=>document.getElementById("status").textContent=t,setTitle=t=>document.getElementById("pageTitle").textContent=t,content=document.getElementById("content");
   const stats=()=>`<section class="stats"><article class="stat-card"><span>Total Anggota</span><strong>${anggota.length}</strong></article><article class="stat-card"><span>Simpanan Pokok</span><strong>${rupiah(totalPokok)}</strong></article><article class="stat-card"><span>Simpanan Wajib</span><strong>${rupiah(totalWajib)}</strong></article></section>`;
@@ -165,7 +165,7 @@ async function renderDashboard(){
     const today=now.toISOString().slice(0,10);
     const txNo="TRX-"+String(now.getFullYear()).slice(2)+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+String(Math.floor(Math.random()*900)+100);
     const memberOptions=anggota.map(a=>`<option value="${esc(a.id)}">${esc(a.no_anggota)} — ${esc(a.nama)}</option>`).join("");
-    const history=[...wajib.map(w=>({date:w.created_at||String(w.tahun)+"-"+String(w.bulan).padStart(2,"0")+"-01T00:00:00",member:byId.get(w.anggota_id)?.nama||"-",category:"Simpanan Wajib",amount:Number(w.jumlah||0),status:"Berhasil",source:w.sumber_transaksi||"WEB"})),...anggota.filter(a=>Number(a.simpanan_pokok||0)>0).map(a=>({date:a.created_at||a.tanggal_masuk+"T00:00:00",member:a.nama||"-",category:"Simpanan Pokok",amount:Number(a.simpanan_pokok||0),status:"Berhasil"}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+    const history=[...transactions.map(t=>({date:t.tanggal||t.created_at,member:byId.get(t.anggota_id)?.nama||"-",category:t.kategori==="Pengeluaran"?"Pengeluaran":t.kategori==="wajib"?"Simpanan Wajib":t.kategori==="pokok"?"Simpanan Pokok":t.kategori||"-",amount:Number(t.jumlah||0),status:"Berhasil",source:t.sumber_transaksi||"WEB",direction:t.arah})),...wajib.map(w=>({date:w.created_at||String(w.tahun)+"-"+String(w.bulan).padStart(2,"0")+"-01T00:00:00",member:byId.get(w.anggota_id)?.nama||"-",category:"Simpanan Wajib",amount:Number(w.jumlah||0),status:"Berhasil",source:w.sumber_transaksi||"WEB",direction:"Masuk"})),...anggota.filter(a=>Number(a.simpanan_pokok||0)>0).map(a=>({date:a.created_at||a.tanggal_masuk+"T00:00:00",member:a.nama||"-",category:"Simpanan Pokok",amount:Number(a.simpanan_pokok||0),status:"Berhasil",direction:"Masuk"}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
     const historyRows=history.map(h=>`<tr><td>${dateId(h.date)}</td><td>${esc(h.member)}</td><td>${esc(h.category)}</td><td><b>${rupiah(h.amount)}</b></td><td><span class="status-pill pending">${h.source||"WEB"}</span></td></tr>`).join("")||'<tr><td colspan="6" class="empty">Belum ada riwayat transaksi.</td></tr>';
     content.innerHTML=`
       <section class="transaction-head"><div><h2>Entri Data Transaksi</h2><p>Catat simpanan pokok dan simpanan wajib anggota.</p></div></section>
@@ -176,9 +176,9 @@ async function renderDashboard(){
             <div class="form-grid">
               <label>Nomor Transaksi<input id="txNo" value="${txNo}" readonly><small>Otomatis</small></label>
               <label>Tanggal<input id="txDate" type="date" value="${today}" required></label>
-              <label>Cari / Pilih Nomor Anggota<select id="txMember" required><option value="">Pilih anggota...</option>${memberOptions}</select></label>
+              <label>Cari / Pilih Nomor Anggota<select id="txMember"><option value="">Pilih anggota...</option>${memberOptions}</select></label>
               <label>Nama Anggota<input id="txMemberName" readonly placeholder="Nama anggota akan tampil"></label>
-              <label>Kategori Transaksi<select id="txCategory"><option value="wajib">Simpanan Wajib</option><option value="pokok">Simpanan Pokok</option></select></label>
+              <label>Kategori Transaksi<select id="txCategory"><option value="wajib">Simpanan Wajib</option><option value="pokok">Simpanan Pokok</option><option value="keluar">Pengeluaran</option></select></label>
               <label>Jenis Arus<div class="flow-buttons"><button type="button" id="flowMasuk" class="flow-btn active">↓ Masuk</button><button type="button" id="flowKeluar" class="flow-btn">↑ Keluar</button></div></label>
               <label>Nominal<input id="txAmount" type="number" min="1" step="1" value="10000" required><small id="txAmountHint">Simpanan Wajib: nominal harus kelipatan Rp10.000.</small></label>
               <label>Metode Pembayaran<div class="flow-buttons"><button type="button" id="payTunai" class="pay-btn active">▣ Tunai</button><button type="button" id="payTransfer" class="pay-btn">▤ Transfer</button></div></label>
@@ -204,8 +204,8 @@ async function renderDashboard(){
     const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment"),amountHint=document.getElementById("txAmountHint");
     let payment="Tunai";
     let flow="Masuk";
-    const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));const isWajib=category.value==="wajib";memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=isWajib?"Simpanan Wajib":"Simpanan Pokok";sumAmount.textContent=rupiah(amount.value);amountHint.textContent=isWajib?"Simpanan Wajib: nominal harus kelipatan Rp10.000.":"Simpanan Pokok: nominal bebas.";};
-    const setFlow=next=>{flow=next;document.getElementById("flowMasuk").classList.toggle("active",flow==="Masuk");document.getElementById("flowKeluar").classList.toggle("active",flow==="Keluar");const flowSummary=document.querySelector(".summary-list .accent.flow-summary");if(flowSummary)flowSummary.textContent=flow==="Masuk"?"↓ Masuk":"↑ Keluar";};
+    const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));const isKeluar=flow==="Keluar";const isWajib=category.value==="wajib";member.required=!isKeluar;memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=isKeluar?"Pengeluaran":(isWajib?"Simpanan Wajib":"Simpanan Pokok");sumAmount.textContent=rupiah(amount.value);amountHint.textContent=isKeluar?"Pengeluaran kas: anggota bersifat opsional.":(isWajib?"Simpanan Wajib: nominal harus kelipatan Rp10.000.":"Simpanan Pokok: nominal bebas.");};
+    const setFlow=next=>{flow=next;document.getElementById("flowMasuk").classList.toggle("active",flow==="Masuk");document.getElementById("flowKeluar").classList.toggle("active",flow==="Keluar");if(flow==="Keluar")category.value="keluar";else if(category.value==="keluar")category.value="wajib";const flowSummary=document.querySelector(".summary-list .accent.flow-summary");if(flowSummary)flowSummary.textContent=flow==="Masuk"?"↓ Masuk":"↑ Keluar";sync();};
     member.onchange=sync;category.onchange=sync;amount.oninput=sync;
     document.getElementById("flowMasuk").onclick=()=>setFlow("Masuk");
     document.getElementById("flowKeluar").onclick=()=>setFlow("Keluar");
@@ -217,10 +217,15 @@ async function renderDashboard(){
       e.preventDefault();
       const a=anggota.find(x=>String(x.id)===String(member.value));
       const jumlah=Number(amount.value||0),tgl=document.getElementById("txDate").value;
-      if(!a){alert("Pilih anggota terlebih dahulu.");return}
+      if(flow==="Masuk"&&!a){alert("Pilih anggota terlebih dahulu.");return}
       if(jumlah<=0){alert("Nominal harus lebih dari 0.");return}
       if(flow==="Keluar"){
-        alert("Arus Keluar sudah dapat dipilih, tetapi pencatatan Arus Keluar belum diaktifkan agar saldo tidak salah terpotong. Saat ini hanya Arus Masuk yang dapat disimpan.");
+        const nomorReferensi=document.getElementById("txRef").value.trim()||null;
+        const keterangan=note.value.trim()||null;
+        const {error}=await supabase.from("koperasi_transaksi").insert({no_transaksi:document.getElementById("txNo").value,tanggal:tgl,anggota_id:a?.id||null,kategori:"Pengeluaran",arah:"Keluar",jumlah,metode_pembayaran:payment,nomor_referensi:nomorReferensi,keterangan,sumber_transaksi:"WEB"});
+        if(error)throw error;
+        alert("Arus Keluar berhasil dicatat.");
+        pageTransaksi();
         return;
       }
       if(category.value==="wajib" && jumlah%10000!==0){
