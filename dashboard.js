@@ -356,9 +356,9 @@ async function renderDashboard(){
       <section class="card anggota-list-card">
         <div class="section-head anggota-list-head">
           <div><p class="eyebrow">Data Anggota</p><h2>Daftar Anggota</h2></div>
-          <div class="anggota-tools"><select id="genderFilter" class="year-select"><option value="">Semua jenis kelamin</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select><input id="search" class="search" type="search" placeholder="Cari nomor anggota atau nama..."></div>
+          <div class="anggota-tools"><select id="genderFilter" class="year-select"><option value="">Semua jenis kelamin</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select><input id="search" class="search" type="search" placeholder="Cari nomor anggota, nama, NIK, atau HP..."></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>L/P</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>NIK</th><th>Tempat, Tgl Lahir</th><th>L/P</th><th>Tanggal Masuk</th><th>Alamat</th><th>No HP</th><th>Simpanan Pokok</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="rows"></tbody></table></div>
       </section>`;
     const panel=document.getElementById("addMemberPanel"),form=document.getElementById("addMemberForm");
     document.getElementById("showAddMember").onclick=()=>{panel.hidden=false;document.getElementById("memberNama").focus()};
@@ -392,10 +392,10 @@ async function renderDashboard(){
     };
     const render=list=>{
       const el=document.getElementById("rows");
-      el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button><button type="button" class="detail-btn primary" data-view-form="${esc(a.id)}">Lihat Formulir</button><button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></div></td></tr>`}).join("")||'<tr><td colspan="7" class="empty">Tidak ditemukan.</td></tr>';
+      el.innerHTML=list.map(a=>{const pokok=Number(a.simpanan_pokok||0),status=pokok>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota)}</b></td><td><b>${esc(a.nama)}</b></td><td>${esc(a.no_induk_kependudukan||"-")}</td><td>${esc(a.tempat_lahir||"-")}, ${dateId(a.tanggal_lahir)}</td><td>${esc(a.jenis_kelamin||"-")}</td><td>${dateId(a.tanggal_masuk)}</td><td>${esc(a.alamat||"-")}</td><td>${esc(a.no_hp||"-")}</td><td><b>${rupiah(pokok)}</b></td><td><span class="status-pill ${pokok>=100000?"success":"pending"}">${status}</span></td><td><div class="table-actions"><button type="button" class="detail-btn" data-edit-name="${esc(a.id)}">Edit</button><button type="button" class="detail-btn primary" data-view-form="${esc(a.id)}">Lihat Formulir</button><button type="button" class="detail-btn" data-delete-member="${esc(a.id)}">Hapus</button></div></td></tr>`}).join("")||'<tr><td colspan="11" class="empty">Tidak ditemukan.</td></tr>';
       el.onclick=e=>{const btn=e.target.closest("button");if(!btn||!el.contains(btn))return;e.preventDefault();e.stopPropagation();if(btn.dataset.editName)return editMemberName(btn.dataset.editName);if(btn.dataset.viewForm)return lihatFormulirPendaftaran(btn.dataset.viewForm);if(btn.dataset.deleteMember)return deleteMember(btn.dataset.deleteMember)};
     };
-    const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
+    const apply=()=>{const q=String(document.getElementById("search").value||"").toLowerCase(),gender=document.getElementById("genderFilter").value;render(anggota.filter(a=>(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q)||String(a.no_induk_kependudukan||"").toLowerCase().includes(q)||String(a.no_hp||"").toLowerCase().includes(q)||String(a.alamat||"").toLowerCase().includes(q))&&(!gender||String(a.jenis_kelamin||"").toUpperCase().startsWith(gender))))};
     document.getElementById("search").oninput=apply;document.getElementById("genderFilter").onchange=apply;render(anggota);
   }
   function pageAnggotaDetail(id){
