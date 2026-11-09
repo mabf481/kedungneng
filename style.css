@@ -131,3 +131,8 @@
 body.modal-open{overflow:hidden}
 @keyframes waEditIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:560px){.wa-edit-modal{padding:12px}.wa-edit-dialog{border-radius:15px}.wa-edit-head{padding:16px}.wa-edit-form{padding:16px}.wa-edit-actions{display:grid;grid-template-columns:1fr 1fr}.wa-edit-actions .detail-btn{width:100%}}
+
+.wa-edit-actions-spacer{flex:1}
+.wa-edit-actions .danger{background:#fff1f2;color:#dc2626;border-color:#fecdd3}
+.wa-edit-actions .danger:hover{background:#fee2e2;border-color:#fda4af}
+@media(max-width:560px){.wa-edit-actions-spacer{display:none}}
