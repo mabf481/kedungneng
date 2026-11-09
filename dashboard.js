@@ -249,6 +249,17 @@ async function renderDashboard(){
     };
     sync();
   }
+  async function buatFormulirPendaftaranPDF(a){
+    if(!a)throw new Error("Data anggota tidak ditemukan.");
+    if(!window.PDFLib){await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";s.onload=resolve;s.onerror=()=>reject(new Error("Library PDF gagal dimuat."));document.head.appendChild(s)});}
+    const {PDFDocument,StandardFonts,rgb}=window.PDFLib;const pdf=await PDFDocument.create();const page=pdf.addPage([595.28,841.89]);const font=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);const margin=48;
+    const line=y=>page.drawLine({start:{x:margin,y},end:{x:595.28-margin,y},thickness:1,color:rgb(.75,.75,.75)});const text=(v,x,y,size=10,o={})=>page.drawText(String(v??"-"),{x,y,size,font:o.bold?bold:font,color:rgb(0,0,0),maxWidth:o.maxWidth});
+    page.drawText("LLP KEDUNGNENG",{x:margin,y:790,size:16,font:bold});page.drawText("FORMULIR PENDAFTARAN ANGGOTA",{x:margin,y:766,size:13,font:bold});page.drawText("Formulir dibuat otomatis dari Dashboard LLP Kedungneng",{x:margin,y:748,size:9,font});line(732);
+    const rows=[["Nomor Anggota",a.no_anggota],["Nama Lengkap",a.nama],["Nomor Induk Kependudukan",a.no_induk_kependudukan],["Tempat, Tanggal Lahir",(a.tempat_lahir||"-")+" , "+(a.tanggal_lahir?dateId(a.tanggal_lahir):"-")],["Jenis Kelamin",String(a.jenis_kelamin||"").toUpperCase()==="L"?"Laki-laki":"Perempuan"],["Alamat",a.alamat],["No HP",a.no_hp],["Tanggal Masuk",a.tanggal_masuk?dateId(a.tanggal_masuk):dateId(new Date())]];let y=700;
+    for(const [label,value] of rows){text(label,margin,y,10,{bold:true});text(":",220,y,10,{bold:true});text(value,235,y,10,{maxWidth:310});line(y-10);y-=58;}
+    y-=5;text("Pernyataan Anggota",margin,y,11,{bold:true});y-=22;text("Dengan ini saya mengajukan pendaftaran sebagai anggota LLP Kedungneng dan menyatakan bahwa data",margin,y,9);y-=15;text("yang saya berikan adalah benar dan dapat dipergunakan untuk keperluan administrasi koperasi.",margin,y,9);y-=45;text("Tempat/Tanggal: Kedungneng, "+dateId(new Date()),margin,y,9);y-=45;text("Anggota yang mendaftar",margin,y,9,{bold:true});text("Petugas",390,y,9,{bold:true});y-=70;text("("+String(a.nama||"").trim()+")",margin,y,9);text("(________________)",390,y,9);
+    const bytes=await pdf.save(),blob=new Blob([bytes],{type:"application/pdf"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="Formulir-Pendaftaran-"+String(a.no_anggota||a.nama||"anggota").replace(/[^a-zA-Z0-9_-]+/g,"-")+".pdf";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
   function pageAnggota(){
     setTitle("Anggota");
     setStatus(anggota.length+" anggota");
@@ -316,7 +327,9 @@ async function renderDashboard(){
         }).select("id,no_anggota,nama,no_induk_kependudukan,tempat_lahir,tanggal_lahir,jenis_kelamin,alamat,no_hp,tanggal_masuk,simpanan_pokok,simpanan_sukarela,created_at").single();
         if(error)throw error;
         anggota.push(data);anggota.sort((a,b)=>String(a.no_anggota).localeCompare(String(b.no_anggota),undefined,{numeric:true}));
-        panel.hidden=true;form.reset();alert("Anggota berhasil ditambahkan dengan nomor "+noAnggota+"."); pageAnggota();
+        panel.hidden=true;form.reset();
+        await buatFormulirPendaftaranPDF(data);
+        alert("Anggota berhasil ditambahkan dengan nomor "+noAnggota+". Formulir pendaftaran otomatis dibuat."); pageAnggota();
       }catch(err){alert("Gagal menambah anggota: "+(err?.message||String(err)))}finally{btn.disabled=false;btn.textContent="+ Simpan Anggota"}
     };
     const render=list=>{
