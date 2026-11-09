@@ -103,3 +103,11 @@
 .category-btn.category-out{grid-column:1/-1}
 .category-value{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;margin:0!important;padding:0!important;border:0!important}
 @media(max-width:560px){.category-buttons{grid-template-columns:1fr}.category-btn.category-out{grid-column:auto}}
+
+/* Akses Bot WA: setiap data tabel tetap satu baris */
+.wa-access-table{overflow-x:auto;overflow-y:visible}
+.wa-access-table table{min-width:760px}
+.wa-access-table th,.wa-access-table td{white-space:nowrap;vertical-align:middle}
+.wa-access-table td:nth-child(2){max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.wa-access-table .table-actions{display:flex!important;flex-wrap:nowrap!important;gap:5px;white-space:nowrap}
+.wa-access-table .table-actions .detail-btn{white-space:nowrap;flex:none}
