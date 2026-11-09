@@ -332,7 +332,7 @@ async function renderDashboard(){
   async function cetakFormPendaftaran(a,autoPrint=true){
     if(!window.PDFLib){alert("Mesin PDF belum termuat. Silakan muat ulang dashboard.");return}
     const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-    const templateUrl="/daftar.pdf?v=20261109-18";
+    const templateUrl="/daftar.pdf?v=20261109-20";
     try{
       const response=await fetch(templateUrl,{cache:"no-store"});
       if(!response.ok)throw new Error("Template PDF tidak ditemukan (HTTP "+response.status+"). Pastikan file daftar.pdf ada di root repository.");
@@ -341,17 +341,16 @@ async function renderDashboard(){
       if(bytes.length<5||String.fromCharCode(...bytes.slice(0,5))!=="%PDF-"){
         throw new Error("File daftar.pdf bukan PDF yang valid. Server mengembalikan "+(contentType||"data tanpa Content-Type")+".");
       }
-      // Hapus seluruh NIK dari formulir. Template asli menyimpan NIK sebagai gambar,
-      // jadi area NIK ditutup putih pada hasil PDF. Tidak ada NIK anggota yang dicetak.
-      const cleanBytes=bytes;
-      const pdf=await PDFDocument.load(cleanBytes);
+
+      const pdf=await PDFDocument.load(bytes);
       const page=pdf.getPages()[0];
-      const width=page.getWidth(),height=page.getHeight();
       const font=await pdf.embedFont(StandardFonts.Helvetica);
-      const fontSize=13;
-      // Area NIK bawaan pada template (koordinat PDF).
-      
-      const cover=(x,y,w,h)=>{};
+      const fontSize=14;
+
+      // Bersihkan DATA CONTOH yang tertanam pada PDF asli sebelum menulis data anggota.
+      // Label, kop, logo, judul, dan isi formulir tidak disentuh.
+      const white=rgb(1,1,1);
+      const cover=(x,y,w,h)=>page.drawRectangle({x,y,width:w,height:h,color:white});
       const text=(value,x,y,size=fontSize)=>page.drawText(String(value??""),{x,y,size,font,color:rgb(0,0,0)});
       const wrap=(value,maxChars)=>{const words=String(value||"").trim().split(/\\s+/);const lines=[];let line="";for(const word of words){const next=line?line+" "+word:word;if(next.length>maxChars&&line){lines.push(line);line=word}else line=next}if(line)lines.push(line);return lines};
       const fmtDate=v=>{if(!v)return"-";const d=new Date(v+"T00:00:00");return Number.isNaN(d.getTime())?"-":d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})};
@@ -362,17 +361,26 @@ async function renderDashboard(){
       const hp=String(a.no_hp||"-");
       const name=String(a.nama||"-");
       const nik=String(a.no_induk_kependudukan||"-");
-      // NIK sejajar dengan teks "Nomor Induk Kependudukan" pada template.
-      const nikTextY=622;
-      text(nik,256,nikTextY,13);
-      cover(252,620,310,32);text(name,256,639,13);
-      cover(252,573,310,32);text(birth,256.765,585.77,14);
-      cover(252,550,310,32);text(gender,256,559,13);
-      cover(252,505,310,54);
-      const addressLines=wrap(alamat,47).slice(0,2);addressLines.forEach((line,i)=>text(line,256,526-i*23,13));
-      cover(252,477,310,32);text(hp,256,486,13);
-      cover(360,508,205,34);text("Brebes, "+today,363,517,13);
-      cover(392,164,150,38);text(name,396,177,13);
+
+      // NIK
+      cover(252,613,310,24); text(nik,256,622,14);
+      // Nama Lengkap
+      cover(252,632,310,24); text(name,256,639,14);
+      // Tempat, Tanggal Lahir
+      cover(252,573,310,28); text(birth,256.765,585.77,14);
+      // Jenis Kelamin
+      cover(252,550,310,26); text(gender,256,559,14);
+      // Alamat (maksimal 2 baris)
+      cover(252,502,310,58);
+      const addressLines=wrap(alamat,47).slice(0,2);
+      addressLines.forEach((line,i)=>text(line,256,526-i*23,14));
+      // No HP
+      cover(252,477,310,26); text(hp,256,486,14);
+      // Tanggal pemohon
+      cover(360,508,205,34); text("Brebes, "+today,363,517,14);
+      // Nama pemohon
+      cover(392,164,150,38); text(name,396,177,14);
+
       const out=await pdf.save();
       const blob=new Blob([out],{type:"application/pdf"});
       const url=URL.createObjectURL(blob);
