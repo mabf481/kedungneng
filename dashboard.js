@@ -119,14 +119,6 @@ async function renderDashboard(){
       }
     };
   }
-  async function lihatFormulirPendaftaran(id){
-    const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
-    try{
-      await buatFormulirPendaftaranPDF(a);
-    }catch(err){
-      alert("Gagal membuka formulir: "+(err?.message||String(err)));
-    }
-  }
   async function deleteMember(id){
     const a=anggota.find(x=>String(x.id)===String(id));if(!a)return;
     const ok=confirm("Hapus anggota "+(a.nama||"-")+" ("+(a.no_anggota||"-")+")?\n\nData anggota akan dihapus dan tindakan ini tidak dapat dibatalkan.");
