@@ -108,7 +108,8 @@ async function renderDashboard(){
         const {error}=await supabase.from("koperasi_anggota").update({nama,no_induk_kependudukan:nik,tempat_lahir:tempat,tanggal_lahir:tanggal,jenis_kelamin:gender,alamat,no_hp:hp,tanggal_masuk:masuk,simpanan_pokok:pokok,simpanan_sukarela:sukarela}).eq("id",a.id);
         if(error)throw error;
         Object.assign(a,{nama,no_induk_kependudukan:nik,tempat_lahir:tempat,tanggal_lahir:tanggal,jenis_kelamin:gender,alamat,no_hp:hp,tanggal_masuk:masuk,simpanan_pokok:pokok,simpanan_sukarela:sukarela});
-        alert("Seluruh data anggota berhasil diperbarui.");
+        await buatFormulirPendaftaranPDF(a);
+        alert("Seluruh data anggota berhasil diperbarui. Formulir diperbarui.");
         panel.remove();
         document.querySelectorAll("[data-menu]").forEach(b=>b.classList.toggle("active",b.dataset.menu==="anggota"));
         pageAnggota();
