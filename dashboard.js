@@ -258,23 +258,65 @@ async function renderDashboard(){
     };
     sync();
   }
-  async function buatFormulirPendaftaranPDF(a){
+  async function buatFormulirPendaftaranPDF(a,targetWindow=null){
     if(!a)throw new Error("Data anggota tidak ditemukan.");
-    if(!window.PDFLib){
-      await new Promise((resolve,reject)=>{
-        const existing=document.querySelector("script[data-pdf-lib]");
-        if(existing){existing.addEventListener("load",resolve,{once:true});existing.addEventListener("error",()=>reject(new Error("Library PDF gagal dimuat.")),{once:true});return;}
-        const s=document.createElement("script");s.src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js";s.async=false;s.dataset.pdfLib="1";s.onload=resolve;s.onerror=()=>reject(new Error("Library PDF gagal dimuat dari CDN."));document.head.appendChild(s);
-      });
+    const pageW=595.28,pageH=841.89,margin=48;
+    const objects=[];
+    const escPdf=v=>String(v??"").replace(/\\/g,"\\\\").replace(/\\(/g,"\\(").replace(/\\)/g,"\\)");
+    const clean=v=>String(v??"-").normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^\\x20-\\x7E]/g,"?");
+    const addObj=s=>{objects.push(s);return objects.length;};
+    const fontObj=addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+    const boldFontObj=addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+    const cmds=[];
+    const txt=(v,x,y,size=10,bold=false)=>{
+      const s=clean(v);
+      cmds.push("BT /"+(bold?"F2":"F1")+" "+size+" Tf 0 0 0 rg 1 0 0 1 "+x.toFixed(2)+" "+y.toFixed(2)+" Tm ("+escPdf(s)+") Tj ET");
+    };
+    const line=y=>cmds.push("0.75 w 0.75 0.75 0.75 RG "+margin+" "+y.toFixed(2)+" m "+(pageW-margin)+" "+y.toFixed(2)+" l S");
+    txt("LLP KEDUNGNENG",margin,790,16,true);
+    txt("FORMULIR PENDAFTARAN ANGGOTA",margin,766,13,true);
+    txt("Formulir pendaftaran anggota",margin,748,9,false);
+    line(732);
+    const rows=[
+      ["Nomor Anggota",a.no_anggota],
+      ["Nama Lengkap",a.nama],
+      ["Nomor Induk Kependudukan",a.no_induk_kependudukan],
+      ["Tempat, Tanggal Lahir",(a.tempat_lahir||"-")+" , "+(a.tanggal_lahir?dateId(a.tanggal_lahir):"-")],
+      ["Jenis Kelamin",String(a.jenis_kelamin||"").toUpperCase()==="L"?"Laki-laki":"Perempuan"],
+      ["Alamat",a.alamat],
+      ["No HP",a.no_hp],
+      ["Tanggal Masuk",a.tanggal_masuk?dateId(a.tanggal_masuk):dateId(new Date())]
+    ];
+    let y=700;
+    for(const [label,value] of rows){
+      txt(label,margin,y,10,true);txt(":",220,y,10,true);txt(value,235,y,10,false);line(y-10);y-=58;
     }
-    if(!window.PDFLib)throw new Error("PDF-Lib belum termuat. Silakan coba lagi.");
-    const {PDFDocument,StandardFonts,rgb}=window.PDFLib;const pdf=await PDFDocument.create();const page=pdf.addPage([595.28,841.89]);const font=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);const margin=48;
-    const line=y=>page.drawLine({start:{x:margin,y},end:{x:595.28-margin,y},thickness:1,color:rgb(.75,.75,.75)});const text=(v,x,y,size=10,o={})=>page.drawText(String(v??"-"),{x,y,size,font:o.bold?bold:font,color:rgb(0,0,0),maxWidth:o.maxWidth});
-    page.drawText("LLP KEDUNGNENG",{x:margin,y:790,size:16,font:bold});page.drawText("FORMULIR PENDAFTARAN ANGGOTA",{x:margin,y:766,size:13,font:bold});page.drawText("Formulir dibuat otomatis dari Dashboard LLP Kedungneng",{x:margin,y:748,size:9,font});line(732);
-    const rows=[["Nomor Anggota",a.no_anggota],["Nama Lengkap",a.nama],["Nomor Induk Kependudukan",a.no_induk_kependudukan],["Tempat, Tanggal Lahir",(a.tempat_lahir||"-")+" , "+(a.tanggal_lahir?dateId(a.tanggal_lahir):"-")],["Jenis Kelamin",String(a.jenis_kelamin||"").toUpperCase()==="L"?"Laki-laki":"Perempuan"],["Alamat",a.alamat],["No HP",a.no_hp],["Tanggal Masuk",a.tanggal_masuk?dateId(a.tanggal_masuk):dateId(new Date())]];let y=700;
-    for(const [label,value] of rows){text(label,margin,y,10,{bold:true});text(":",220,y,10,{bold:true});text(value,235,y,10,{maxWidth:310});line(y-10);y-=58;}
-    y-=5;text("Pernyataan Anggota",margin,y,11,{bold:true});y-=22;text("Dengan ini saya mengajukan pendaftaran sebagai anggota LLP Kedungneng dan menyatakan bahwa data",margin,y,9);y-=15;text("yang saya berikan adalah benar dan dapat dipergunakan untuk keperluan administrasi koperasi.",margin,y,9);y-=45;text("Tempat/Tanggal: Kedungneng, "+dateId(new Date()),margin,y,9);y-=45;text("Anggota yang mendaftar",margin,y,9,{bold:true});text("Petugas",390,y,9,{bold:true});y-=70;text("("+String(a.nama||"").trim()+")",margin,y,9);text("(________________)",390,y,9);
-    const bytes=await pdf.save(),blob=new Blob([bytes],{type:"application/pdf"}),url=URL.createObjectURL(blob);window.open(url,"_blank","noopener,noreferrer");setTimeout(()=>URL.revokeObjectURL(url),60000);
+    y-=5;
+    txt("Pernyataan Anggota",margin,y,11,true);y-=22;
+    txt("Dengan ini saya mengajukan pendaftaran sebagai anggota LLP Kedungneng.",margin,y,9);
+    y-=15;txt("Saya menyatakan bahwa data yang saya berikan adalah benar.",margin,y,9);
+    y-=45;txt("Tempat/Tanggal: Kedungneng, "+dateId(new Date()),margin,y,9);
+    y-=45;txt("Anggota yang mendaftar",margin,y,9,true);txt("Petugas",390,y,9,true);
+    y-=70;txt("("+clean(a.nama)+")",margin,y,9);txt("(________________)",390,y,9);
+    const content=cmds.join("\n")+"\n";
+    const contentObj=addObj("<< /Length "+content.length+" >>\nstream\n"+content+"endstream");
+    const pageObj=addObj("<< /Type /Page /Parent 5 0 R /MediaBox [0 0 "+pageW+" "+pageH+"] /Resources << /Font << /F1 "+fontObj+" 0 R /F2 "+boldFontObj+" 0 R >> >> /Contents "+contentObj+" 0 R >>");
+    const pagesObj=addObj("<< /Type /Pages /Kids ["+pageObj+" 0 R] /Count 1 >>");
+    const catalogObj=addObj("<< /Type /Catalog /Pages "+pagesObj+" 0 R >>");
+    objects[pageObj-1]=objects[pageObj-1].replace("/Parent 5 0 R","/Parent "+pagesObj+" 0 R");
+    let pdf="%PDF-1.4\n%âãÏÓ\n",offsets=[0];
+    for(let i=0;i<objects.length;i++){offsets[i+1]=pdf.length;pdf+=(i+1)+" 0 obj\n"+objects[i]+"\nendobj\n";}
+    const xref=pdf.length;pdf+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n";
+    for(let i=1;i<=objects.length;i++)pdf+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+    pdf+="trailer\n<< /Size "+(objects.length+1)+" /Root "+catalogObj+" 0 R >>\nstartxref\n"+xref+"\n%%EOF";
+    const bytes=new Uint8Array(pdf.length);
+    for(let i=0;i<pdf.length;i++)bytes[i]=pdf.charCodeAt(i)&255;
+    const blob=new Blob([bytes],{type:"application/pdf"});
+    const url=URL.createObjectURL(blob);
+    const win=targetWindow||window.open("about:blank","_blank");
+    if(!win){URL.revokeObjectURL(url);throw new Error("Jendela formulir tidak dapat dibuka. Izinkan pop-up untuk dashboard ini.");}
+    win.location.href=url;
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
   function pageAnggota(){
     setTitle("Anggota");
