@@ -13,34 +13,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install PyMuPDF
         run: python -m pip install pymupdf
-
-      - name: Remove field labels from daftar.pdf
+      - name: Remove all old member sample data
         run: |
           python - <<'PY'
           import fitz
-
-          path = "daftar.pdf"
-          doc = fitz.open(path)
-
-          # Remove only the old field-label/colon area.
-          # This leaves the rest of the cooperative form untouched.
+          doc = fitz.open("daftar.pdf")
           for page in doc:
-              page.add_redact_annot(fitz.Rect(45, 185, 260, 360), fill=(1, 1, 1))
+              page.add_redact_annot(fitz.Rect(35, 175, 560, 370), fill=(1,1,1))
               page.apply_redactions()
-
           doc.save("daftar.cleaned.pdf", garbage=4, deflate=True)
           doc.close()
           PY
           mv daftar.cleaned.pdf daftar.pdf
-
       - name: Commit cleaned template
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add daftar.pdf
           git diff --cached --quiet && exit 0
-          git commit -m "Fix registration PDF template field area"
+          git commit -m "Remove all member sample data from registration PDF"
           git push
