@@ -20,7 +20,7 @@ async function renderDashboard(){
   const {data:adminProfile}=await supabase.from("koperasi_admin").select("id,email,nama,role,active,protected").eq("id",session.user.id).maybeSingle();
   if(currentEmail!==ADMIN_EMAIL && (!adminProfile || !adminProfile.active)){await supabase.auth.signOut();showError("Akses ditolak. Akun admin tidak aktif.");return}
   const canManageAdmins=currentEmail===ADMIN_EMAIL || adminProfile?.role==="super_admin";
-  document.body.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><img class="brand-logo" src="https://raw.githubusercontent.com/mabf481/website/main/public/logo-llp.webp" alt="Logo LLP Kedungneng"><p class="eyebrow">LLP Kedungneng</p><h2>Admin Panel</h2></div><nav class="nav"><button data-menu="dashboard" class="active">Dashboard</button><button data-menu="transaksi">Transaksi</button><button data-menu="anggota">Anggota</button><button data-menu="wajib">Simpanan Wajib</button><button data-menu="aksesbot">Akses Bot WA</button>${canManageAdmins?'<button data-menu="admin">Admin</button>':''}</nav><div class="sidebar-footer"><button id="logout" class="logout">Keluar</button></div></aside><section class="main-area"><header class="topbar"><div><p class="eyebrow">LLP Kedungneng</p><h1 id="pageTitle">Dashboard</h1></div><span id="status" class="muted status">Memuat data...</span></header><main class="container" id="content"></main></section></div>`;
+  document.body.innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><img class="brand-logo" src="https://raw.githubusercontent.com/mabf481/website/main/public/logo-llp.webp" alt="Logo LLP Kedungneng"><p class="eyebrow">LLP Kedungneng</p><h2>Admin Panel</h2></div><nav class="nav"><button data-menu="dashboard" class="active">Dashboard</button><button data-menu="transaksi">Transaksi</button><button data-menu="anggota">Anggota</button><button data-menu="pokok">Simpanan Pokok</button><button data-menu="wajib">Simpanan Wajib</button><button data-menu="aksesbot">Akses Bot WA</button>${canManageAdmins?'<button data-menu="admin">Admin</button>':''}</nav><div class="sidebar-footer"><button id="logout" class="logout">Keluar</button></div></aside><section class="main-area"><header class="topbar"><div><p class="eyebrow">LLP Kedungneng</p><h1 id="pageTitle">Dashboard</h1></div><span id="status" class="muted status">Memuat data...</span></header><main class="container" id="content"></main></section></div>`;
   document.getElementById("logout").onclick=async()=>{await supabase.auth.signOut();location.replace("/")};
   let realtimeTimer=null;
   const refreshFromRealtime=async payload=>{
@@ -476,6 +476,34 @@ async function renderDashboard(){
     }catch(err){content.innerHTML='<section class="card"><p class="message">Gagal memuat data admin: '+esc(err.message)+'</p></section>'}};
     await draw();
   }
+  function pagePokok(){
+    setTitle("Simpanan Pokok");
+    let selectedStatus="SEMUA";
+    const render=()=>{
+      const total=anggota.reduce((s,a)=>s+Number(a.simpanan_pokok||0),0);
+      const lunas=anggota.filter(a=>Number(a.simpanan_pokok||0)>=100000).length;
+      const belum=anggota.length-lunas;
+      setStatus("Data Supabase • "+anggota.length+" anggota");
+      content.innerHTML=`
+        <section class="dashboard-head anggota-head"><div><h2>Simpanan Pokok</h2><p>Data simpanan pokok seluruh anggota. Nilai diambil langsung dari data anggota di Supabase.</p></div></section>
+        <section class="stats anggota-stats">
+          <article class="stat-card modern"><div class="stat-icon">Rp</div><div><span>Total Simpanan Pokok</span><strong>${rupiah(total)}</strong><small class="trend up"><em>${anggota.length} anggota</em></small></div></article>
+          <article class="stat-card modern"><div class="stat-icon">✓</div><div><span>Lunas</span><strong>${lunas}</strong><small class="trend up"><em>anggota</em></small></div></article>
+          <article class="stat-card modern"><div class="stat-icon">!</div><div><span>Belum Lunas</span><strong>${belum}</strong><small class="trend neutral"><em>anggota</em></small></div></article>
+        </section>
+        <section class="card anggota-list-card"><div class="section-head anggota-list-head"><div><p class="eyebrow">Data Supabase</p><h2>Daftar Simpanan Pokok</h2></div><div class="anggota-tools"><select id="pokokStatus" class="year-select"><option value="SEMUA">Semua Status</option><option value="LUNAS">Lunas</option><option value="BELUM LUNAS">Belum Lunas</option></select><input id="pokokSearch" class="search" type="search" placeholder="Cari nomor anggota atau nama..."></div></div>
+          <div class="table-wrap"><table><thead><tr><th>No. Anggota</th><th>Nama Anggota</th><th>Tanggal Masuk</th><th>Simpanan Pokok</th><th>Status</th></tr></thead><tbody id="pokokRows"></tbody></table></div></section>`;
+      const draw=()=>{
+        const q=String(document.getElementById("pokokSearch").value||"").toLowerCase();
+        const list=anggota.filter(a=>{const nominal=Number(a.simpanan_pokok||0),status=nominal>=100000?"LUNAS":"BELUM LUNAS";return (selectedStatus==="SEMUA"||status===selectedStatus)&&(!q||String(a.no_anggota||"").toLowerCase().includes(q)||String(a.nama||"").toLowerCase().includes(q))});
+        document.getElementById("pokokRows").innerHTML=list.map(a=>{const nominal=Number(a.simpanan_pokok||0),status=nominal>=100000?"LUNAS":"BELUM LUNAS";return `<tr><td><b>${esc(a.no_anggota||"-")}</b></td><td><b>${esc(a.nama||"-")}</b></td><td>${dateId(a.tanggal_masuk)}</td><td><b>${rupiah(nominal)}</b></td><td><span class="status-pill ${status==="LUNAS"?"success":"pending"}">${status}</span></td></tr>`}).join("")||'<tr><td colspan="5" class="empty">Tidak ada data.</td></tr>';
+      };
+      document.getElementById("pokokStatus").onchange=e=>{selectedStatus=e.target.value;draw()};
+      document.getElementById("pokokSearch").oninput=draw;
+      draw();
+    };
+    render();
+  }
   function pageWajib(){
     setTitle("Simpanan Wajib");
     const years=[...new Set(wajib.map(w=>Number(w.tahun)).filter(Boolean))].sort((a,b)=>b-a);
@@ -523,8 +551,8 @@ async function renderDashboard(){
     };
     render();
   }
-  const pages={dashboard:pageDashboard,transaksi:pageTransaksi,anggota:pageAnggota,wajib:pageWajib,aksesbot:pageAksesBot,admin:pageAdmin};
-  const menuPaths={dashboard:"/dashboard",transaksi:"/Transaksi",anggota:"/Anggota",wajib:"/simwajib",aksesbot:"/Aksesbot",admin:"/Admin"};
+  const pages={dashboard:pageDashboard,transaksi:pageTransaksi,anggota:pageAnggota,pokok:pagePokok,wajib:pageWajib,aksesbot:pageAksesBot,admin:pageAdmin};
+  const menuPaths={dashboard:"/dashboard",transaksi:"/Transaksi",anggota:"/Anggota",pokok:"/simpananpokok",wajib:"/simwajib",aksesbot:"/Aksesbot",admin:"/Admin"};
   const pathMenus=Object.fromEntries(Object.entries(menuPaths).map(([k,v])=>[v.toLowerCase(),k]));
   const getMenuFromPath=()=>pathMenus[location.pathname.replace(/\/+$/,"").toLowerCase()]||"dashboard";
   const activateMenu=key=>{document.querySelectorAll("[data-menu]").forEach(b=>b.classList.toggle("active",b.dataset.menu===key));};
