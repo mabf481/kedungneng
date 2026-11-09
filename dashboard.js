@@ -179,7 +179,7 @@ async function renderDashboard(){
               <label>Cari / Pilih Nomor Anggota<select id="txMember" required><option value="">Pilih anggota...</option>${memberOptions}</select></label>
               <label>Nama Anggota<input id="txMemberName" readonly placeholder="Nama anggota akan tampil"></label>
               <label>Kategori Transaksi<select id="txCategory"><option value="wajib">Simpanan Wajib</option><option value="pokok">Simpanan Pokok</option></select></label>
-              <label>Jenis Arus<div class="flow-buttons"><button type="button" id="flowMasuk" class="flow-btn active">↓ Masuk</button><button type="button" id="flowKeluar" class="flow-btn" disabled>↑ Keluar</button></div></label>
+              <label>Jenis Arus<div class="flow-buttons"><button type="button" id="flowMasuk" class="flow-btn active">↓ Masuk</button><button type="button" id="flowKeluar" class="flow-btn">↑ Keluar</button></div></label>
               <label>Nominal<input id="txAmount" type="number" min="1" step="1" value="10000" required><small id="txAmountHint">Simpanan Wajib: nominal harus kelipatan Rp10.000.</small></label>
               <label>Metode Pembayaran<div class="flow-buttons"><button type="button" id="payTunai" class="pay-btn active">▣ Tunai</button><button type="button" id="payTransfer" class="pay-btn">▤ Transfer</button></div></label>
               <label>Nomor Referensi<input id="txRef" placeholder="Opsional"></label>
@@ -194,7 +194,7 @@ async function renderDashboard(){
           <div class="summary-list">
             <div><span>Anggota</span><b id="sumMember">-</b></div>
             <div><span>Kategori Transaksi</span><b id="sumCategory">Simpanan Wajib</b></div>
-            <div><span>Jenis Arus</span><b class="accent">↓ Masuk</b></div>
+            <div><span>Jenis Arus</span><b class="accent flow-summary">↓ Masuk</b></div>
             <div><span>Nominal</span><b class="accent" id="sumAmount">Rp10.000</b></div>
             <div><span>Metode Pembayaran</span><b id="sumPayment">Tunai</b></div>
             <div><span>Status</span><span class="status-pill pending">Siap disimpan</span></div>
@@ -203,8 +203,12 @@ async function renderDashboard(){
         <section class="card recent-card transaction-history"><div class="section-head"><div><p class="eyebrow">Riwayat Entri</p><h3>Transaksi Terbaru</h3></div></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Anggota</th><th>Kategori</th><th>Nominal</th><th>Sumber</th></tr></thead><tbody>${historyRows}</tbody></table></div></section></div></section>`;
     const member=document.getElementById("txMember"),memberName=document.getElementById("txMemberName"),category=document.getElementById("txCategory"),amount=document.getElementById("txAmount"),note=document.getElementById("txNote"),sumMember=document.getElementById("sumMember"),sumCategory=document.getElementById("sumCategory"),sumAmount=document.getElementById("sumAmount"),sumPayment=document.getElementById("sumPayment"),amountHint=document.getElementById("txAmountHint");
     let payment="Tunai";
+    let flow="Masuk";
     const sync=()=>{const a=anggota.find(x=>String(x.id)===String(member.value));const isWajib=category.value==="wajib";memberName.value=a?.nama||"";sumMember.textContent=a?.nama||"-";sumCategory.textContent=isWajib?"Simpanan Wajib":"Simpanan Pokok";sumAmount.textContent=rupiah(amount.value);amountHint.textContent=isWajib?"Simpanan Wajib: nominal harus kelipatan Rp10.000.":"Simpanan Pokok: nominal bebas.";};
+    const setFlow=next=>{flow=next;document.getElementById("flowMasuk").classList.toggle("active",flow==="Masuk");document.getElementById("flowKeluar").classList.toggle("active",flow==="Keluar");const flowSummary=document.querySelector(".summary-list .accent.flow-summary");if(flowSummary)flowSummary.textContent=flow==="Masuk"?"↓ Masuk":"↑ Keluar";};
     member.onchange=sync;category.onchange=sync;amount.oninput=sync;
+    document.getElementById("flowMasuk").onclick=()=>setFlow("Masuk");
+    document.getElementById("flowKeluar").onclick=()=>setFlow("Keluar");
     document.getElementById("payTunai").onclick=()=>{payment="Tunai";document.getElementById("payTunai").classList.add("active");document.getElementById("payTransfer").classList.remove("active");sumPayment.textContent=payment};
     document.getElementById("payTransfer").onclick=()=>{payment="Transfer";document.getElementById("payTransfer").classList.add("active");document.getElementById("payTunai").classList.remove("active");sumPayment.textContent=payment};
     note.oninput=()=>document.getElementById("txCount").textContent=note.value.length+"/200";
@@ -215,6 +219,10 @@ async function renderDashboard(){
       const jumlah=Number(amount.value||0),tgl=document.getElementById("txDate").value;
       if(!a){alert("Pilih anggota terlebih dahulu.");return}
       if(jumlah<=0){alert("Nominal harus lebih dari 0.");return}
+      if(flow==="Keluar"){
+        alert("Arus Keluar sudah dapat dipilih, tetapi pencatatan Arus Keluar belum diaktifkan agar saldo tidak salah terpotong. Saat ini hanya Arus Masuk yang dapat disimpan.");
+        return;
+      }
       if(category.value==="wajib" && jumlah%10000!==0){
         alert("Pembayaran simpanan wajib harus kelipatan Rp10.000.");
         return;
